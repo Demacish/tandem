@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
+import casa.moller.tandem.core.data.inbox.RecipeInboxRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.recipe.KeptRecipeImport
 import casa.moller.tandem.core.data.recipe.RecipeImportProblem
@@ -22,6 +23,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,6 +67,8 @@ class RecipeImportViewModel @AssistedInject constructor(
     private val handle: SavedStateHandle,
     private val imports: RecipeImportRepository,
     permissions: SpacePermissionsRepository,
+    // Fas 5 (rss lane, #35): a post of the recipe inbox is "Importerad" once its review is accepted.
+    private val inbox: RecipeInboxRepository,
 ) : ViewModel() {
     @AssistedFactory
     interface Factory {
@@ -83,6 +87,9 @@ class RecipeImportViewModel @AssistedInject constructor(
 
     /** "Fota recept": the text is read on the phone, whatever it looks like (plan §8.4 #39). */
     private val scanned: Boolean = key.scanned
+
+    /** Fas 5 (rss lane): the recipe inbox's post this import comes from, null for any other import. */
+    private val inboxEntryId: Long? = key.inboxEntryId
 
     /** The kept file went to the editor with the draft: it is the editor's to delete. */
     private var sourceHandedOver = false
@@ -124,6 +131,23 @@ class RecipeImportViewModel @AssistedInject constructor(
         val kept = pages.value.filter { File(it).isFile }
         if (kept.size != pages.value.size) handle[KEY_PAGES] = ArrayList(kept)
         restoreKept(handle.remove<String>(KEY_SOURCE))
+        if (key.autoImport) autoImport()
+    }
+
+    /**
+     * Fas 5 (rss lane, plan §10 "två tryck"): the inbox's "Importera" fetches the post's address at
+     * once, so the review is the next thing the user sees. Once only (not again after a rotation or
+     * process death, when the input is kept but the result is not), and never over a kept AI answer.
+     */
+    private fun autoImport() {
+        if (handle.get<Boolean>(KEY_AUTO_STARTED) == true) return
+        viewModelScope.launch {
+            keptChecked.first { it }
+            val current = progress.value
+            if (current.working || current.result != null || input.value.isBlank()) return@launch
+            handle[KEY_AUTO_STARTED] = true
+            import(sourceOf(input.value))
+        }
     }
 
     /** Shows the AI answer that waits. [leftSource] is the file of the result before the process died: it stays only with its answer. */
@@ -184,6 +208,8 @@ class RecipeImportViewModel @AssistedInject constructor(
             RecipeImportAction.Leave -> if (progress.value.result != null) imports.forgetKeptResult()
 
             RecipeImportAction.OpenEditor -> progress.value.result?.let { result ->
+                // Not cancelled with this screen, which closes now: the post is remembered as imported.
+                inboxEntryId?.let { id -> viewModelScope.launch(NonCancellable) { inbox.markImported(id) } }
                 sourceHandedOver = true
                 handle.remove<String>(KEY_SOURCE)
                 imports.forgetKeptResult()
@@ -380,6 +406,7 @@ class RecipeImportViewModel @AssistedInject constructor(
         const val KEY_SHARED_FILE_TAKEN = "recipe_import_shared_file_taken"
         const val KEY_PAGES = "recipe_import_pages"
         const val KEY_SOURCE = "recipe_import_source"
+        const val KEY_AUTO_STARTED = "recipe_import_auto_started"
         private const val STOP_TIMEOUT_MILLIS = 5_000L
 
         /** Shared texts rarely are a bare link ("Pannkakor https://…" from a browser): the first link in a short text wins. */

@@ -46,6 +46,7 @@ import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.ui.accessibility.announce
 import casa.moller.tandem.feature.home.HomeAction
 import casa.moller.tandem.feature.home.R
+import casa.moller.tandem.feature.home.TodayInboxState
 
 /**
  * Fas 3's leftovers (plan §10 Fas 3 "Hemsektioner som användaren konfigurerar"): "Anpassa Idag",
@@ -54,15 +55,26 @@ import casa.moller.tandem.feature.home.R
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun TodayCustomizeSheet(layout: HomeLayout, onAction: (HomeAction) -> Unit) {
+internal fun TodayCustomizeSheet(
+    layout: HomeLayout,
+    onAction: (HomeAction) -> Unit,
+    inbox: TodayInboxState = TodayInboxState(),
+    onShowInbox: (Boolean) -> Unit = {},
+) {
     ModalBottomSheet(onDismissRequest = { onAction(HomeAction.Customize(open = false)) }) {
-        TodayCustomizeContent(layout = layout, onAction = onAction)
+        TodayCustomizeContent(layout = layout, onAction = onAction, inbox = inbox, onShowInbox = onShowInbox)
     }
 }
 
 /** The sheet's content (also shown by the screenshot tests). */
 @Composable
-internal fun TodayCustomizeContent(layout: HomeLayout, onAction: (HomeAction) -> Unit, modifier: Modifier = Modifier) {
+internal fun TodayCustomizeContent(
+    layout: HomeLayout,
+    onAction: (HomeAction) -> Unit,
+    modifier: Modifier = Modifier,
+    inbox: TodayInboxState = TodayInboxState(),
+    onShowInbox: (Boolean) -> Unit = {},
+) {
     val spacing = TandemTheme.spacing
     Column(
         modifier = modifier
@@ -88,6 +100,23 @@ internal fun TodayCustomizeContent(layout: HomeLayout, onAction: (HomeAction) ->
             // Keyed by the section: focus follows it when it moves, instead of staying on a slot
             // whose buttons now act on another section.
             key(type) { CustomizeRow(type = type, index = index, count = types.size, layout = layout, onAction = onAction) }
+        }
+        // Fas 5 (rss lane, #35): "Nytt i inkorgen", only when the recipe inbox is set up (its setting "Visa på Idag").
+        if (inbox.available) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .toggleable(value = inbox.shown, role = Role.Switch, onValueChange = onShowInbox),
+            ) {
+                Text(
+                    stringResource(R.string.home_inbox_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f).padding(end = spacing.sm),
+                )
+                Switch(checked = inbox.shown, onCheckedChange = null)
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm), verticalAlignment = Alignment.CenterVertically) {
             TandemTextButton(text = stringResource(R.string.home_customize_reset), onClick = { onAction(HomeAction.ResetSections) })

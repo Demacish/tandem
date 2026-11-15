@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (rss lane): "Nytt i inkorgen" on Today (plan §7 #35). -->
+    <string name="home_inbox_title">New in the inbox</string>
+    <plurals name="home_inbox_subtitle">
+        <item quantity="one">%d new recipe post</item>
+        <item quantity="other">%d new recipe posts</item>
+    </plurals>
+    <string name="home_inbox_all">Open inbox</string>
+</resources>

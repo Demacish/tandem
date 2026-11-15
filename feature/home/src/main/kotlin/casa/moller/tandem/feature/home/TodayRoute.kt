@@ -46,8 +46,12 @@ fun TodayRoute(
     tonightShoppingAction: TonightShoppingAction? = null,
     onOpenMakeNow: ((useUpFirst: Boolean) -> Unit)? = null,
     onOpenKitchen: (() -> Unit)? = null,
+    // Fas 5 (rss lane, #35): "Nytt i inkorgen" (a post's preview, or the inbox for null); null shows no row.
+    onOpenInbox: ((entryId: Long?) -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val inboxViewModel = if (onOpenInbox != null) hiltViewModel<TodayInboxViewModel>() else null
+    val inbox = inboxViewModel?.uiState?.collectAsStateWithLifecycle()?.value ?: TodayInboxState()
     val books by booksViewModel.uiState.collectAsStateWithLifecycle()
     val pantry = if (onOpenMakeNow != null) {
         hiltViewModel<TodayPantryViewModel>().uiState.collectAsStateWithLifecycle().value
@@ -90,6 +94,9 @@ fun TodayRoute(
         onOpenMakeNow = { useUpFirst -> onOpenMakeNow?.invoke(useUpFirst) },
         // Fas 5 (kok lane, #41): "Köksskärm" in the top bar.
         onOpenKitchen = onOpenKitchen,
+        inbox = inbox,
+        onOpenInbox = { entryId -> onOpenInbox?.invoke(entryId) },
+        onShowInbox = { shown -> inboxViewModel?.setShown(shown) },
     )
 }
 

@@ -58,6 +58,7 @@ import casa.moller.tandem.feature.home.HomeAction
 import casa.moller.tandem.feature.home.HomeUiState
 import casa.moller.tandem.feature.home.R
 import casa.moller.tandem.feature.home.TodayBooksState
+import casa.moller.tandem.feature.home.TodayInboxState
 import casa.moller.tandem.feature.home.TodayPantryState
 import casa.moller.tandem.feature.home.TonightShoppingAction
 import java.time.ZoneId
@@ -129,10 +130,14 @@ fun TodayScreen(
     pantry: TodayPantryState = TodayPantryState(),
     onOpenMakeNow: (useUpFirst: Boolean) -> Unit = {},
     onOpenKitchen: (() -> Unit)? = null,
+    // Fas 5 (rss lane, #35): "Nytt i inkorgen" and its row in "Anpassa Idag".
+    inbox: TodayInboxState = TodayInboxState(),
+    onOpenInbox: (entryId: Long?) -> Unit = {},
+    onShowInbox: (Boolean) -> Unit = {},
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored day is shown (Diagnostics).
     ReportContentReady(ready = !state.loading)
-    if (state.customizing) TodayCustomizeSheet(layout = state.layout, onAction = onAction)
+    if (state.customizing) TodayCustomizeSheet(layout = state.layout, onAction = onAction, inbox = inbox, onShowInbox = onShowInbox)
     val spacing = TandemTheme.spacing
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -177,6 +182,8 @@ fun TodayScreen(
                         snackbarHostState = snackbarHostState,
                         pantry = pantry,
                         onOpenMakeNow = onOpenMakeNow,
+                        inbox = inbox,
+                        onOpenInbox = onOpenInbox,
                     )
                 }
             }
@@ -196,6 +203,8 @@ private fun TodayContent(
     snackbarHostState: SnackbarHostState,
     pantry: TodayPantryState = TodayPantryState(),
     onOpenMakeNow: (Boolean) -> Unit = {},
+    inbox: TodayInboxState = TodayInboxState(),
+    onOpenInbox: (Long?) -> Unit = {},
 ) {
     val spacing = TandemTheme.spacing
     val horizontal = if (twoColumns) spacing.xxl else spacing.screenHorizontal
@@ -286,6 +295,17 @@ private fun TodayContent(
                     cardWidth = if (twoColumns) 240.dp else 168.dp,
                     onOpenRecipe = openRecipe,
                     onOpenMakeNow = { onOpenMakeNow(false) },
+                )
+            }
+        }
+        // Fas 5 (rss lane, #35): "Nytt i inkorgen" after the pantry, before the recipe rows; hidden when off or empty.
+        if (inbox.visible) {
+            item(key = "inbox") {
+                TodayInboxCard(
+                    inbox = inbox,
+                    horizontal = horizontal,
+                    onOpenInbox = onOpenInbox,
+                    modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth + horizontal * 2),
                 )
             }
         }

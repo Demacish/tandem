@@ -4,6 +4,7 @@ import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.feature.mealplan.navigation.MealCalendarKey
 import casa.moller.tandem.feature.recipes.navigation.BookDetailKey
 import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeInboxSettingsKey
 import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
 import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.shopping.navigation.StoreReminderKey
@@ -58,6 +59,8 @@ internal val NavKey.isMorePage: Boolean
         WatchKey,
         // Fas 5 (butik lane): Inställningar → Påminnelse nära butiken (feature:shopping).
         StoreReminderKey,
+        // Fas 5 (rss lane): Inställningar → Inkorg för recept (feature:recipes).
+        RecipeInboxSettingsKey,
         -> true
 
         else -> false

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (bana rss): "Inkorg för recept" (plan §7 #35, §8.4), en allmän Miniflux-klient. -->
+    <string name="inbox_title">Inkorg för recept</string>
+    <string name="inbox_more_supporting">Nya recept från din Miniflux</string>
+    <string name="inbox_open_settings">Inställningar för inkorgen</string>
+    <plurals name="inbox_action_count">
+        <item quantity="one">Inkorg för recept, %d nytt</item>
+        <item quantity="other">Inkorg för recept, %d nya</item>
+    </plurals>
+    <string name="inbox_not_set_up_title">Samla recepttips</string>
+    <string name="inbox_not_set_up_body">Anslut din egen Miniflux-server och välj kategorier. Nya inlägg visas här och kan importeras med två tryck.</string>
+    <string name="inbox_set_up">Ställ in</string>
+    <string name="inbox_empty_title">Inga nya inlägg</string>
+    <string name="inbox_empty_body">Det finns inga olästa inlägg i de valda kategorierna. Dra nedåt för att titta igen.</string>
+    <string name="inbox_imported">Importerad</string>
+    <string name="inbox_updated">Uppdaterad %s</string>
+    <string name="inbox_guest_note">Som gäst kan du läsa inkorgen men inte importera recept.</string>
+    <string name="inbox_demo_note">Det här är demolägets exempelinkorg. Anslut en Tandoor-server för att använda din egen Miniflux.</string>
+    <string name="inbox_problem_title">Kunde inte uppdatera</string>
+    <string name="inbox_problem_unreachable">Det går inte att nå Miniflux. Visar inläggen som sparats i telefonen.</string>
+    <string name="inbox_problem_auth">Miniflux godtog inte API-nyckeln. Ange en ny nyckel i inkorgens inställningar.</string>
+    <string name="inbox_problem_not_miniflux">Adressen svarar inte som Miniflux. Kontrollera adressen.</string>
+    <string name="inbox_problem_invalid_url">Ange adressen till din Miniflux-server. Den ska börja med https://.</string>
+    <string name="inbox_problem_tls">Serverns certifikat kunde inte kontrolleras.</string>
+    <string name="inbox_problem_throttled">Miniflux bad appen att vänta. Försök igen om en stund.</string>
+    <string name="inbox_problem_server">Miniflux svarade med ett fel. Försök igen senare.</string>
+    <string name="inbox_problem_paused">Inkorgen väntar en stund efter flera fel, för att skona servern.</string>
+    <string name="inbox_problem_other">Något gick fel med Miniflux.</string>
+    <string name="inbox_preview_import">Importera</string>
+    <string name="inbox_preview_mark_read">Markera som läst</string>
+    <string name="inbox_preview_open">Öppna i webbläsaren</string>
+    <string name="inbox_preview_close">Stäng</string>
+    <string name="inbox_preview_source">%1$s · %2$s</string>
+    <string name="inbox_preview_imported_note">Du har importerat det här receptet.</string>
+    <string name="inbox_preview_guest">Gäster kan inte importera recept.</string>
+    <string name="inbox_marked_read">Markerat som läst</string>
+    <string name="inbox_no_browser">Ingen app kan öppna länken</string>
+    <string name="inbox_settings_intro">Hämta recepttips från din egen Miniflux-server. Välj kategorier, så visas deras olästa inlägg under Recept, där du importerar ett med två tryck.</string>
+    <string name="inbox_settings_connect_heading">Anslut till Miniflux</string>
+    <string name="inbox_settings_address">Adress till Miniflux</string>
+    <string name="inbox_settings_key">API-nyckel</string>
+    <string name="inbox_settings_key_help">Skapa en i Miniflux under Inställningar → API-nycklar.</string>
+    <string name="inbox_settings_connect">Anslut</string>
+    <string name="inbox_settings_key_note">Nyckeln sparas krypterad i telefonen och skickas bara till din Miniflux-server.</string>
+    <string name="inbox_settings_server_heading">Server</string>
+    <string name="inbox_settings_connected_to">Ansluten till %s</string>
+    <string name="inbox_settings_disconnect">Koppla från</string>
+    <string name="inbox_settings_disconnect_title">Koppla från Miniflux?</string>
+    <string name="inbox_settings_disconnect_body">Nyckeln, kategorierna och de sparade inläggen tas bort från telefonen. Inget ändras i Miniflux.</string>
+    <string name="inbox_settings_cancel">Avbryt</string>
+    <string name="inbox_settings_categories_heading">Kategorier</string>
+    <string name="inbox_settings_categories_body">Inlägg i de valda kategorierna visas i inkorgen.</string>
+    <plurals name="inbox_settings_unread">
+        <item quantity="one">%d oläst</item>
+        <item quantity="other">%d olästa</item>
+    </plurals>
+    <string name="inbox_settings_categories_save">Spara kategorier</string>
+    <string name="inbox_settings_categories_saved">Kategorierna har sparats</string>
+    <string name="inbox_settings_categories_failed">Kunde inte hämta kategorierna.</string>
+    <string name="inbox_settings_retry">Försök igen</string>
+    <string name="inbox_settings_none_chosen">Välj minst en kategori för att slå på inkorgen.</string>
+    <string name="inbox_settings_options_heading">Val</string>
+    <string name="inbox_settings_mark_read">Markera som läst efter import</string>
+    <string name="inbox_settings_mark_read_body">Inlägget markeras som läst i Miniflux när du importerar det.</string>
+    <string name="inbox_settings_today">Visa på Idag</string>
+    <string name="inbox_settings_today_body">”Nytt i inkorgen” på fliken Idag.</string>
+    <string name="inbox_settings_background">Inkorgen uppdateras när du öppnar den och några gånger om dagen när telefonen har nät.</string>
+    <string name="inbox_settings_open_inbox">Öppna inkorgen</string>
+    <string name="inbox_settings_demo_title">Inte i demoläget</string>
+    <string name="inbox_settings_demo_body">Demoläget har en exempelinkorg under Recept. Anslut en Tandoor-server för att använda din egen Miniflux.</string>
+    <string name="inbox_settings_no_account_title">Logga in först</string>
+    <string name="inbox_settings_no_account_body">Inkorgen hör till ett Tandoor-konto.</string>
+    <string name="inbox_settings_secure_storage">Nyckeln kunde inte sparas i telefonen.</string>
+</resources>

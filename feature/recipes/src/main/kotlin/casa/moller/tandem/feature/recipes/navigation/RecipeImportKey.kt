@@ -12,6 +12,10 @@ import kotlinx.serialization.Serializable
  *
  * @property sharedPageUris several images shared at once (`ACTION_SEND_MULTIPLE`): the pages of one recipe.
  * @property scanned [sharedText] comes from "Fota recept": it is read on the phone, even with a link in it.
+ * @property inboxEntryId Fas 5 (rss lane, #35): [sharedText] is the address of this recipe inbox post;
+ *   accepting the review marks it "Importerad" (and read in Miniflux when that setting is on).
+ * @property autoImport Fas 5 (rss lane): fetch [sharedText] at once, without "Hämta receptet" (the
+ *   inbox's "Importera" is the second and last tap before the review).
  */
 @Serializable
 data class RecipeImportKey(
@@ -20,5 +24,7 @@ data class RecipeImportKey(
     val sharedMimeType: String? = null,
     val sharedPageUris: List<String> = emptyList(),
     val scanned: Boolean = false,
+    val inboxEntryId: Long? = null,
+    val autoImport: Boolean = false,
 ) : NavKey,
     FullScreenDestination

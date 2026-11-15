@@ -87,6 +87,8 @@ import casa.moller.tandem.feature.recipes.navigation.PairingPickerKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeInboxKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeInboxSettingsKey
 import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
 import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
@@ -241,6 +243,8 @@ fun TandemShell(
         onLogInAgain = onLogInAgain,
         // Fas 5 (butik lane): Mer → Inställningar → Påminnelse nära butiken (the shell's tests leave it out).
         storeReminderInMore = true,
+        // Fas 5 (rss lane): Mer → Inställningar → Inkorg för recept (the shell's tests leave it out).
+        recipeInboxInMore = true,
         onAddAccount = onAddAccount,
         // Fas 5 (wear lane): Mer → Klockan with its ViewModels (tests leave the default NoWatchPage).
         watchPage = RouteWatchPage,
@@ -336,6 +340,8 @@ internal fun ShellScaffold(
     onAddAccount: () -> Unit = {},
     // Fas 5 (butik lane): the row "Påminnelse nära butiken" in Mer (off in tests, so Mer's references stay as they were).
     storeReminderInMore: Boolean = false,
+    // Fas 5 (rss lane): the row "Inkorg för recept" in Mer (off in tests, so Mer's references stay as they were).
+    recipeInboxInMore: Boolean = false,
     // Fas 4 (push lane): Mer → Synk och lagring → Snabb push.
     fastPushPage: FastPushPage = RouteFastPushPage,
     // Fas 5 (wear lane): Mer → Klockan. No row and no page unless the caller passes RouteWatchPage.
@@ -415,6 +421,15 @@ internal fun ShellScaffold(
                 onOpenCalendar = { navigation.navigate(MealCalendarKey, replace = { key -> key == MealCalendarKey }) },
             )
         }
+        // --- Fas 5 (rss lane, #35): the recipe inbox lives on Recept, its settings under Mer. ---
+        val openInbox: (Long?) -> Unit = { entryId ->
+            navigation.selectTab(ShellTab.RECIPES)
+            navigation.navigate(RecipeInboxKey(entryId), replace = { it is RecipeInboxKey || it is RecipeImportKey })
+        }
+        val openInboxSettings: () -> Unit = {
+            navigation.selectTab(ShellTab.MORE)
+            navigation.navigate(RecipeInboxSettingsKey, replace = { it.isMorePage })
+        }
         // --- Fas S (grund lane): Hemma, scanning and drinks, each through its module's one route. ---
         val openKey: (NavKey) -> Unit = { navigation.navigate(it) }
         val openRecipe: (Long) -> Unit = { navigation.navigate(RecipeDetailKey(it)) }
@@ -473,6 +488,20 @@ internal fun ShellScaffold(
             entry<StoreReminderKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 features.StoreReminder(onBack = { navigation.goBack() })
             }
+            // Fas 5 (rss lane, #35): "Inkorg för recept" on the Recipes tab and its settings beside Mer.
+            entry<RecipeInboxKey> { key ->
+                features.RecipeInbox(
+                    key = key,
+                    // Tap 2: the import review on top of the inbox (back returns to it; an accepted
+                    // import opens the editor in the review's place).
+                    onOpenImport = { importKey -> navigation.navigate(importKey, replace = { it is RecipeImportKey }) },
+                    onOpenSettings = { openInboxSettings() },
+                    onBack = { navigation.goBack() },
+                )
+            }
+            entry<RecipeInboxSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                features.RecipeInboxSettings(onBack = { navigation.goBack() }, onOpenInbox = { openInbox(null) })
+            }
             // drycker lane: "Drycker" is a list-detail scene of its own on wide windows (a picked drink
             // replaces the open one); a drink is a recipe, shown by the recipe detail.
             entry<DrinksKey>(
@@ -523,6 +552,8 @@ internal fun ShellScaffold(
                     onOpenMakeNow = { useUpFirst -> navigation.navigate(MakeNowKey(useUpFirst)) },
                     // Fas 5 (kok lane, #41): the kitchen display over Idag.
                     onOpenKitchen = { navigation.navigate(KitchenKey, replace = { it is KitchenKey }) },
+                    // Fas 5 (rss lane, #35): "Nytt i inkorgen" opens the inbox (a post's preview) on Recept.
+                    onOpenInbox = openInbox,
                 )
             }
             entry<RecipesKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { features.EmptyRecipePane() })) {
@@ -536,6 +567,8 @@ internal fun ShellScaffold(
                     // Fas 3 (redigerare lane): "Nytt recept"; (import lane): "Importera recept".
                     onCreateRecipe = { navigation.navigate(RecipeEditorKey()) },
                     onImportRecipe = { navigation.navigate(RecipeImportKey()) },
+                    // Fas 5 (rss lane, #35): "Inkorg för recept".
+                    onOpenInbox = { openInbox(null) },
                     // Phase 2 (books lane): the collections row; on wide windows beside the list.
                     onOpenCollection = { collection ->
                         val key = when (collection) {
@@ -713,6 +746,7 @@ internal fun ShellScaffold(
                     onOpenKitchen = { navigation.navigate(KitchenKey, replace = { it is KitchenKey }) },
                     selectedPage = navigation.stackOf(ShellTab.MORE).getOrNull(1),
                     storeReminderInMore = storeReminderInMore,
+                    recipeInboxInMore = recipeInboxInMore,
                     crashNotice = crashNotice,
                     // Fas 5 (wear lane, plan §7 #33): Mer → Klockan, only with a watch or a pairing.
                     watchRow = { selected ->

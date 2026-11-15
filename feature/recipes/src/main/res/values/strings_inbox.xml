@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (rss lane): "Inkorg för recept" (plan §7 #35, §8.4), a generic Miniflux client. -->
+    <string name="inbox_title">Recipe inbox</string>
+    <string name="inbox_more_supporting">New recipes from your Miniflux</string>
+    <string name="inbox_open_settings">Inbox settings</string>
+    <plurals name="inbox_action_count">
+        <item quantity="one">Recipe inbox, %d new</item>
+        <item quantity="other">Recipe inbox, %d new</item>
+    </plurals>
+    <string name="inbox_not_set_up_title">Collect recipe tips</string>
+    <string name="inbox_not_set_up_body">Connect your own Miniflux server and choose categories. New posts show up here and can be imported with two taps.</string>
+    <string name="inbox_set_up">Set up</string>
+    <string name="inbox_empty_title">No new posts</string>
+    <string name="inbox_empty_body">There are no unread posts in the chosen categories. Pull down to check again.</string>
+    <string name="inbox_imported">Imported</string>
+    <string name="inbox_updated">Updated %s</string>
+    <string name="inbox_guest_note">As a guest you can read the inbox but not import recipes.</string>
+    <string name="inbox_demo_note">This is demo mode\'s sample inbox. Connect a Tandoor server to use your own Miniflux.</string>
+    <string name="inbox_problem_title">Could not update</string>
+    <string name="inbox_problem_unreachable">Miniflux cannot be reached. Showing the posts saved on the phone.</string>
+    <string name="inbox_problem_auth">Miniflux did not accept the API key. Enter a new key in the inbox settings.</string>
+    <string name="inbox_problem_not_miniflux">The address does not answer like Miniflux. Check the address.</string>
+    <string name="inbox_problem_invalid_url">Enter the address of your Miniflux server. It must start with https://.</string>
+    <string name="inbox_problem_tls">The server\'s certificate could not be verified.</string>
+    <string name="inbox_problem_throttled">Miniflux asked the app to wait. Try again in a while.</string>
+    <string name="inbox_problem_server">Miniflux answered with an error. Try again later.</string>
+    <string name="inbox_problem_paused">The inbox waits a while after several errors, to spare the server.</string>
+    <string name="inbox_problem_other">Something went wrong with Miniflux.</string>
+    <string name="inbox_preview_import">Import</string>
+    <string name="inbox_preview_mark_read">Mark as read</string>
+    <string name="inbox_preview_open">Open in browser</string>
+    <string name="inbox_preview_close">Close</string>
+    <string name="inbox_preview_source">%1$s · %2$s</string>
+    <string name="inbox_preview_imported_note">You have imported this recipe.</string>
+    <string name="inbox_preview_guest">Guests cannot import recipes.</string>
+    <string name="inbox_marked_read">Marked as read</string>
+    <string name="inbox_no_browser">No app can open the link</string>
+    <string name="inbox_settings_intro">Get recipe tips from your own Miniflux server. Choose categories, and their unread posts show up under Recipes, where you import one with two taps.</string>
+    <string name="inbox_settings_connect_heading">Connect to Miniflux</string>
+    <string name="inbox_settings_address">Miniflux address</string>
+    <string name="inbox_settings_address_placeholder" translatable="false">https://rss.example.com</string>
+    <string name="inbox_settings_key">API key</string>
+    <string name="inbox_settings_key_help">Create one in Miniflux under Settings → API Keys.</string>
+    <string name="inbox_settings_connect">Connect</string>
+    <string name="inbox_settings_key_note">The key is stored encrypted on this phone and is only sent to your Miniflux server.</string>
+    <string name="inbox_settings_server_heading">Server</string>
+    <string name="inbox_settings_connected_to">Connected to %s</string>
+    <string name="inbox_settings_disconnect">Disconnect</string>
+    <string name="inbox_settings_disconnect_title">Disconnect Miniflux?</string>
+    <string name="inbox_settings_disconnect_body">The key, the categories and the saved posts are removed from the phone. Nothing changes in Miniflux.</string>
+    <string name="inbox_settings_cancel">Cancel</string>
+    <string name="inbox_settings_categories_heading">Categories</string>
+    <string name="inbox_settings_categories_body">Posts in the chosen categories show up in the inbox.</string>
+    <plurals name="inbox_settings_unread">
+        <item quantity="one">%d unread</item>
+        <item quantity="other">%d unread</item>
+    </plurals>
+    <string name="inbox_settings_categories_save">Save categories</string>
+    <string name="inbox_settings_categories_saved">Categories saved</string>
+    <string name="inbox_settings_categories_failed">Could not load the categories.</string>
+    <string name="inbox_settings_retry">Try again</string>
+    <string name="inbox_settings_none_chosen">Choose at least one category to turn the inbox on.</string>
+    <string name="inbox_settings_options_heading">Options</string>
+    <string name="inbox_settings_mark_read">Mark as read after import</string>
+    <string name="inbox_settings_mark_read_body">The post is marked read in Miniflux when you import it.</string>
+    <string name="inbox_settings_today">Show on Today</string>
+    <string name="inbox_settings_today_body">“New in the inbox” on the Today tab.</string>
+    <string name="inbox_settings_background">The inbox is refreshed when you open it and a few times a day when the phone has a network.</string>
+    <string name="inbox_settings_open_inbox">Open the inbox</string>
+    <string name="inbox_settings_demo_title">Not in demo mode</string>
+    <string name="inbox_settings_demo_body">Demo mode has a sample inbox under Recipes. Connect a Tandoor server to use your own Miniflux.</string>
+    <string name="inbox_settings_no_account_title">Log in first</string>
+    <string name="inbox_settings_no_account_body">The inbox belongs to a Tandoor account.</string>
+    <string name="inbox_settings_secure_storage">The key could not be saved on the phone.</string>
+</resources>

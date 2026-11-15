@@ -50,6 +50,7 @@ import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.CollectionsBookmark
 import casa.moller.tandem.core.designsystem.icon.Countertops
+import casa.moller.tandem.core.designsystem.icon.Inbox
 import casa.moller.tandem.core.designsystem.icon.NotificationsActive
 import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Share
@@ -71,7 +72,9 @@ import casa.moller.tandem.core.ui.toErrorText
 import casa.moller.tandem.feature.mealplan.R as MealPlanR
 import casa.moller.tandem.feature.mealplan.navigation.MealCalendarKey
 import casa.moller.tandem.feature.pantry.navigation.PantryKey
+import casa.moller.tandem.feature.recipes.R as RecipesR
 import casa.moller.tandem.feature.recipes.navigation.BooksKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeInboxSettingsKey
 import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.shell.AccountSummary
 import casa.moller.tandem.feature.shell.R
@@ -121,6 +124,8 @@ internal fun MoreScreen(
     selectedPage: NavKey? = null,
     // Fas 5 (butik lane): Inställningar → Påminnelse nära butiken (TandemShell passes true).
     storeReminderInMore: Boolean = false,
+    // Fas 5 (rss lane): Inställningar → Inkorg för recept (TandemShell passes true).
+    recipeInboxInMore: Boolean = false,
     crashNotice: @Composable () -> Unit = {},
     onOpenKitchen: (() -> Unit)? = null,
     // Fas 5 (wear lane): Mer → Klockan (the row draws itself only with a watch or a pairing).
@@ -303,6 +308,17 @@ internal fun MoreScreen(
                                 supporting = stringResource(ShoppingR.string.store_reminder_more_supporting),
                                 onClick = { onOpenPage(StoreReminderKey) },
                                 selected = selectedPage == StoreReminderKey,
+                            )
+                        }
+                        // Fas 5 (rss lane, plan §7 #35): feature:recipes' "Inkorg för recept" (off by default).
+                        if (recipeInboxInMore) {
+                            GroupDivider()
+                            SettingsRow(
+                                icon = TandemIcons.Inbox,
+                                title = stringResource(RecipesR.string.inbox_title),
+                                supporting = stringResource(RecipesR.string.inbox_more_supporting),
+                                onClick = { onOpenPage(RecipeInboxSettingsKey) },
+                                selected = selectedPage == RecipeInboxSettingsKey,
                             )
                         }
                     }

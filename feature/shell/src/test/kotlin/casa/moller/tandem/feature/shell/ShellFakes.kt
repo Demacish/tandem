@@ -38,6 +38,7 @@ import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeInboxKey
 import casa.moller.tandem.feature.scan.navigation.ScanDestination
 import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellTab
@@ -202,6 +203,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenShoppingList: () -> Unit,
         onOpenMakeNow: (useUpFirst: Boolean) -> Unit,
         onOpenKitchen: () -> Unit,
+        onOpenInbox: (entryId: Long?) -> Unit,
     ) {
         Placeholder(ShellTab.TODAY)
     }
@@ -213,6 +215,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenCollection: (RecipeCollection) -> Unit,
         onCreateRecipe: () -> Unit,
         onImportRecipe: () -> Unit,
+        onOpenInbox: () -> Unit,
     ) {
         Placeholder(ShellTab.RECIPES)
     }
@@ -337,6 +340,13 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
 
     @Composable
     override fun StoreReminder(onBack: () -> Unit) = Page("Reminder near the store", onBack)
+
+    @Composable
+    override fun RecipeInbox(key: RecipeInboxKey, onOpenImport: (RecipeImportKey) -> Unit, onOpenSettings: () -> Unit, onBack: () -> Unit) =
+        Page("Recipe inbox ${key.entryId}", onBack)
+
+    @Composable
+    override fun RecipeInboxSettings(onBack: () -> Unit, onOpenInbox: () -> Unit) = Page("Recipe inbox settings", onBack)
 
     @Composable
     override fun PlanMeal(key: PlanMealKey, onDone: () -> Unit) = Page("Plan a meal ${key.date}", onDone)

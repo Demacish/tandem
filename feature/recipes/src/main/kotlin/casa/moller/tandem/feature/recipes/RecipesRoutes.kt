@@ -35,6 +35,8 @@ import casa.moller.tandem.feature.recipes.detail.RecipeEditControls
 import casa.moller.tandem.feature.recipes.drinks.RecipePairingsRoute
 import casa.moller.tandem.feature.recipes.editor.RecipeEditActionsEffect
 import casa.moller.tandem.feature.recipes.editor.RecipeEditActionsViewModel
+import casa.moller.tandem.feature.recipes.inbox.InboxEntryState
+import casa.moller.tandem.feature.recipes.inbox.InboxEntryViewModel
 import casa.moller.tandem.feature.recipes.list.RecipeListEffect
 import casa.moller.tandem.feature.recipes.list.RecipeListScreen
 import casa.moller.tandem.feature.recipes.list.RecipeListViewModel
@@ -59,8 +61,15 @@ fun RecipesRoute(
     onOpenCollection: (RecipeCollection) -> Unit = {},
     onCreateRecipe: (() -> Unit)? = null,
     onImportRecipe: (() -> Unit)? = null,
+    // Fas 5 (rss lane, #35): "Inkorg för recept"; shown only when the inbox is set up (null: never).
+    onOpenInbox: (() -> Unit)? = null,
 ) {
     val viewModel: RecipeListViewModel = hiltViewModel()
+    val inbox = if (onOpenInbox != null) {
+        hiltViewModel<InboxEntryViewModel>().state.collectAsStateWithLifecycle().value
+    } else {
+        InboxEntryState()
+    }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // Phase 2 (books lane): the collections row and the hearts (their own ViewModel).
     val collections: RecipeCollectionsViewModel = hiltViewModel()
@@ -107,6 +116,8 @@ fun RecipesRoute(
         onCreateRecipe = onCreateRecipe?.takeUnless { collectionsState.readOnly },
         // Fas 3 (import lane): "Importera recept", hidden for guests.
         onImportRecipe = onImportRecipe?.takeUnless { collectionsState.readOnly },
+        inbox = inbox,
+        onOpenInbox = onOpenInbox,
     )
 }
 

@@ -30,9 +30,12 @@ import casa.moller.tandem.feature.recipes.books.WantToCookRoute
 import casa.moller.tandem.feature.recipes.drinks.DrinkRoute
 import casa.moller.tandem.feature.recipes.drinks.drinkSuggestionSlot
 import casa.moller.tandem.feature.recipes.editor.RecipeEditorRoute
+import casa.moller.tandem.feature.recipes.inbox.InboxRoute
+import casa.moller.tandem.feature.recipes.inbox.InboxSettingsRoute
 import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeInboxKey
 import casa.moller.tandem.feature.recipes.recipeimport.RecipeImportRoute
 import casa.moller.tandem.feature.scan.ScanRoute
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
@@ -77,6 +80,8 @@ internal interface ShellFeatures {
         onOpenShoppingList: () -> Unit,
         onOpenMakeNow: (useUpFirst: Boolean) -> Unit,
         onOpenKitchen: () -> Unit,
+        // Fas 5 (rss lane, #35): "Nytt i inkorgen" (a post, or the inbox for null).
+        onOpenInbox: (entryId: Long?) -> Unit,
     )
 
     /**
@@ -91,6 +96,8 @@ internal interface ShellFeatures {
         onOpenCollection: (RecipeCollection) -> Unit,
         onCreateRecipe: () -> Unit,
         onImportRecipe: () -> Unit,
+        // Fas 5 (rss lane, #35): "Inkorg för recept" in the top bar (shown when the inbox is set up).
+        onOpenInbox: () -> Unit,
     )
 
     /**
@@ -228,6 +235,17 @@ internal interface ShellFeatures {
     @Composable
     fun StoreReminder(onBack: () -> Unit)
 
+    /**
+     * Fas 5 (rss lane, plan §7 #35): "Inkorg för recept" (feature:recipes) on the Recipes tab;
+     * [onOpenImport] is the second tap (the import review), [onOpenSettings] its settings under Mer.
+     */
+    @Composable
+    fun RecipeInbox(key: RecipeInboxKey, onOpenImport: (RecipeImportKey) -> Unit, onOpenSettings: () -> Unit, onBack: () -> Unit)
+
+    /** Fas 5 (rss lane): Mer → "Inkorg för recept" (feature:recipes); [onOpenInbox] is "Öppna inkorgen". */
+    @Composable
+    fun RecipeInboxSettings(onBack: () -> Unit, onOpenInbox: () -> Unit)
+
     /** The plan-meal sheet. */
     @Composable
     fun PlanMeal(key: PlanMealKey, onDone: () -> Unit)
@@ -318,6 +336,7 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenShoppingList: () -> Unit,
         onOpenMakeNow: (useUpFirst: Boolean) -> Unit,
         onOpenKitchen: () -> Unit,
+        onOpenInbox: (entryId: Long?) -> Unit,
     ) {
         TodayRoute(
             onOpenRecipe = onOpenRecipe,
@@ -334,6 +353,8 @@ internal object RouteShellFeatures : ShellFeatures {
             onOpenMakeNow = onOpenMakeNow,
             // Fas 5 (kok lane, #41): "Köksskärm".
             onOpenKitchen = onOpenKitchen,
+            // Fas 5 (rss lane, #35): "Nytt i inkorgen".
+            onOpenInbox = onOpenInbox,
         )
     }
 
@@ -344,6 +365,7 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenCollection: (RecipeCollection) -> Unit,
         onCreateRecipe: () -> Unit,
         onImportRecipe: () -> Unit,
+        onOpenInbox: () -> Unit,
     ) {
         RecipesRoute(
             onOpenRecipe = onOpenRecipe,
@@ -351,6 +373,7 @@ internal object RouteShellFeatures : ShellFeatures {
             onOpenCollection = onOpenCollection,
             onCreateRecipe = onCreateRecipe,
             onImportRecipe = onImportRecipe,
+            onOpenInbox = onOpenInbox,
         )
     }
 
@@ -515,6 +538,16 @@ internal object RouteShellFeatures : ShellFeatures {
     @Composable
     override fun StoreReminder(onBack: () -> Unit) {
         StoreReminderRoute(onBack = onBack)
+    }
+
+    @Composable
+    override fun RecipeInbox(key: RecipeInboxKey, onOpenImport: (RecipeImportKey) -> Unit, onOpenSettings: () -> Unit, onBack: () -> Unit) {
+        InboxRoute(key = key, onOpenImport = onOpenImport, onOpenSettings = onOpenSettings, onBack = onBack)
+    }
+
+    @Composable
+    override fun RecipeInboxSettings(onBack: () -> Unit, onOpenInbox: () -> Unit) {
+        InboxSettingsRoute(onBack = onBack, onOpenInbox = onOpenInbox)
     }
 
     @Composable

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (bana rss): "Nytt i inkorgen" på Idag (plan §7 #35). -->
+    <string name="home_inbox_title">Nytt i inkorgen</string>
+    <plurals name="home_inbox_subtitle">
+        <item quantity="one">%d nytt receptinlägg</item>
+        <item quantity="other">%d nya receptinlägg</item>
+    </plurals>
+    <string name="home_inbox_all">Öppna inkorgen</string>
+</resources>

@@ -7,6 +7,7 @@ import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.recipe.RecipeImportSource
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeRecipeImportRepository
+import casa.moller.tandem.core.testing.data.FakeRecipeInboxRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.SampleImports
 import casa.moller.tandem.feature.recipes.R
@@ -45,9 +46,10 @@ class RecipeImportViewModelTest {
 
     private val imports = FakeRecipeImportRepository()
     private val permissions = FakeSpacePermissionsRepository()
+    private val inbox = FakeRecipeInboxRepository()
 
     private fun viewModel(key: RecipeImportKey = RecipeImportKey(), handle: SavedStateHandle = SavedStateHandle()) =
-        RecipeImportViewModel(key, handle, imports, permissions)
+        RecipeImportViewModel(key, handle, imports, permissions, inbox)
 
     private fun TestScope.collect(flow: Flow<*>) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.collect {} }
@@ -57,6 +59,43 @@ class RecipeImportViewModelTest {
         val effects = mutableListOf<T>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.toList(effects) }
         return effects
+    }
+
+    /**
+     * Fas 5 (rss lane, plan §10 "två tryck"): the inbox's "Importera" opens the import with the post's
+     * address and `autoImport`: the link is fetched without a further tap, the review shows the
+     * result, and accepting it marks the post imported. Only once, also after process death.
+     */
+    @Test
+    fun anInboxPostIsFetchedAtOnceAndMarkedImportedWhenAccepted() = runTest {
+        val key = RecipeImportKey(sharedText = "https://example.com/recept/pannkakor", inboxEntryId = 11, autoImport = true)
+        val handle = SavedStateHandle()
+        val vm = viewModel(key, handle)
+        collect(vm.uiState)
+        val effects = effectsOf(vm.effects)
+
+        assertEquals(listOf(RecipeImportSource.Link("https://example.com/recept/pannkakor")), imports.imported)
+        assertEquals("Pannkakor", vm.uiState.value.result!!.draft.name)
+        assertEquals(emptyList<String>(), inbox.calls)
+
+        vm.onAction(RecipeImportAction.OpenEditor)
+        assertEquals(1, effects.filterIsInstance<RecipeImportEffect.OpenEditor>().size)
+        assertEquals(listOf("imported 11"), inbox.calls)
+
+        // Recreated (rotation, process death): not fetched again.
+        val again = viewModel(key, handle)
+        collect(again.uiState)
+        assertEquals(1, imports.imported.size)
+    }
+
+    @Test
+    fun anImportThatIsNotFromTheInboxNeitherStartsNorMarksAnything() = runTest {
+        val vm = viewModel(RecipeImportKey(sharedText = "https://example.com/recept/pannkakor"))
+        collect(vm.uiState)
+        assertEquals(emptyList<RecipeImportSource>(), imports.imported)
+        vm.onAction(RecipeImportAction.Import)
+        vm.onAction(RecipeImportAction.OpenEditor)
+        assertEquals(emptyList<String>(), inbox.calls)
     }
 
     @Test

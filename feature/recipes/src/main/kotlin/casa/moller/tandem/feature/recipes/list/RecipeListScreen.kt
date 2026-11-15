@@ -31,6 +31,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -83,6 +85,7 @@ import casa.moller.tandem.core.designsystem.icon.Check
 import casa.moller.tandem.core.designsystem.icon.DownloadForOffline
 import casa.moller.tandem.core.designsystem.icon.ExpandMore
 import casa.moller.tandem.core.designsystem.icon.GridView
+import casa.moller.tandem.core.designsystem.icon.Inbox
 import casa.moller.tandem.core.designsystem.icon.Link
 import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Search
@@ -109,6 +112,7 @@ import casa.moller.tandem.feature.recipes.R
 import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.recipes.books.RecipeCollectionsRow
 import casa.moller.tandem.feature.recipes.books.RecipeCollectionsState
+import casa.moller.tandem.feature.recipes.inbox.InboxEntryState
 import kotlinx.coroutines.launch
 
 /** Test tag of the recipe search field (S3). */
@@ -143,6 +147,9 @@ fun RecipeListScreen(
     onToggleFavorite: (Long) -> Unit = {},
     onCreateRecipe: (() -> Unit)? = null,
     onImportRecipe: (() -> Unit)? = null,
+    // Fas 5 (rss lane, #35): "Inkorg för recept" beside the import (also for guests: reading writes nothing).
+    inbox: InboxEntryState = InboxEntryState(),
+    onOpenInbox: (() -> Unit)? = null,
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored recipes are shown (Diagnostics).
     ReportContentReady(ready = state.loaded)
@@ -166,6 +173,7 @@ fun RecipeListScreen(
                 },
                 actions = {
                     AppChromeStatusChip(Modifier.padding(end = TandemTheme.spacing.xs))
+                    if (onOpenInbox != null && inbox.shown) InboxButton(newCount = inbox.newCount, onClick = onOpenInbox)
                     // Fas 3 (import lane): "Importera recept" (not for guests: the route passes null).
                     if (onImportRecipe != null) {
                         IconButton(onClick = onImportRecipe) {
@@ -648,3 +656,23 @@ private val PANEL_WIDTH = 320.dp
 private val FAB_CLEARANCE = 72.dp
 private val GRID_MIN_CELL = 150.dp
 private val LIST_MIN_CELL = 340.dp
+
+/** Fas 5 (rss lane): the inbox's button, with the number of new posts as a badge (and in its TalkBack name). */
+@Composable
+private fun InboxButton(newCount: Int, onClick: () -> Unit) {
+    val label = if (newCount > 0) {
+        pluralStringResource(R.plurals.inbox_action_count, newCount, newCount)
+    } else {
+        stringResource(R.string.inbox_title)
+    }
+    IconButton(onClick = onClick, modifier = Modifier.testTag(RECIPES_INBOX_TAG)) {
+        BadgedBox(badge = { if (newCount > 0) Badge { Text(newCount.coerceAtMost(MAX_BADGE).toString()) } }) {
+            Icon(imageVector = TandemIcons.Inbox, contentDescription = label)
+        }
+    }
+}
+
+/** Test tag of Recept's inbox button. */
+const val RECIPES_INBOX_TAG = "recipes:list:inbox"
+
+private const val MAX_BADGE = 99
