@@ -1,5 +1,6 @@
 package casa.moller.tandem.smoke
 
+import android.graphics.Point
 import android.os.SystemClock
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -265,11 +266,19 @@ class Phase1bSmokeTest {
     /**
      * Opens a recipe from the list. A tap that lands while the list still settles after the swipe
      * that found the card can be lost (seen once in CI): tapped again until the detail is open.
+     * The name is tapped at its start: a card found at the bottom of the screen lies under the
+     * extended "New recipe" button at the end, and a tap in the middle of it opened the recipe
+     * editor (main smoke 43691546339); should that still happen, the editor is left again.
      */
     private fun openRecipe(name: String) {
         repeat(OPEN_ATTEMPTS) {
-            runCatching { app.findInList(By.text(name)).click() }
+            runCatching {
+                val card = app.findInList(By.text(name))
+                val bounds = card.visibleBounds
+                card.click(Point(bounds.left + START_TAP_INSET_PX.coerceAtMost(bounds.width() / 2), bounds.centerY()))
+            }
             if (app.device.wait(Until.hasObject(By.desc("Download for offline use")), OPEN_WAIT_MS) == true) return
+            if (app.device.hasObject(By.text(NEW_RECIPE_EDITOR))) app.device.pressBack()
         }
         app.waitFor(By.desc("Download for offline use"))
     }
@@ -400,6 +409,12 @@ class Phase1bSmokeTest {
         const val MAX_STEPS = 12
         const val OPEN_ATTEMPTS = 3
         const val OPEN_WAIT_MS = 7_000L
+
+        /** How far into the recipe name [openRecipe] taps (pixels from its start). */
+        const val START_TAP_INSET_PX = 24
+
+        /** The recipe editor's save button: a tap hit the "New recipe" button instead of the card. */
+        const val NEW_RECIPE_EDITOR = "Save recipe"
 
         /** feature:cook's "Klart!" page, top to bottom. */
         val DONE_PAGE_TEXTS = listOf("Enjoy your meal!", "How did it taste?", "Save in the cook log")
