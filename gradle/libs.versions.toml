@@ -19,11 +19,11 @@ wearTargetSdk = "36"
 compileSdk = "37"
 
 # --- Build toolchain ---
-agp = "9.4.1"
+agp = "9.5.0"
 # AGP 9.4.1 only has a runtime dependency on KGP 2.2.10 / KSP 2.2.10-2.0.2. Declaring the
 # plugins below (root build.gradle.kts, `apply false`) upgrades the shared classpath.
 kotlin = "2.4.21"
-ksp = "2.3.12"            # KSP2, version decoupled from Kotlin since 2.3.0; AGP 9 needs >= 2.3.6
+ksp = "2.3.13"            # KSP2, version decoupled from Kotlin since 2.3.0; AGP 9 needs >= 2.3.6
 
 # --- DI ---
 hilt = "2.60.1"           # AGP 9 requires >= 2.59.2; bundles kotlin-metadata-jvm 2.3.21 (reads up to 2.4.x)
