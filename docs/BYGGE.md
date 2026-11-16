@@ -1147,6 +1147,7 @@ sätts av integrationen. En rad per bana.
 | funktioner | App Functions (plan §8.7: en assistent kan "lägga till mjölk på listan"), 0.9.0 | **"Lägg till mjölk på listan"** genom App Functionen `addToShoppingList(text = "mjölk")` lägger "mjölk" på inköpslistan genom **utkorgen**, tolkat exakt som Handlas "Lägg till" (core:data `ShoppingInput`), och servern får posten när utkorgen töms (`DefaultAssistantActionsTest.milkGoesOnTheListThroughTheOutboxAndReachesTheServer` mot de riktiga repositorierna och Tandoor 2.6.13/2.7.1, `TandemAppFunctionsTest` genom `AppFunctionManager`, röktestet `Phase5FunktionerSmokeTest` genom systemets `cmd app_function` i den minifierade appen). **Varje funktion** står i "App Functions" med sitt exakta namn, id och sina parametrar. Allt är **av** tills "Låt assistenten använda Tandem" (Mer → Assistenten) slås på; avstängt, låst app (utan "Tillåt assistenten när appen är låst"), utloggad, gäst (skrivning) och säkert läge (skrivning) ger tydliga fel; demoläget fungerar på demodata. Ingen funktion tar bort något. Android 16 (API 36) och senare. | ✅ klart i CI 2026-11-15 (PR 43769062855 och röktest 43769062861 på 1f9e40a: shard 1 "OK (14 tests)", shard 2 "OK (33 tests)" med `Phase5FunktionerSmokeTest`; referensbilder från Screenshots 43765106604, bara `shell/assistant_*` och `shell/lock_phone_on_assistant_light*`); på en riktig telefon återstår ägarens prov, se "App Functions" |
 | sdk37 | Target SDK 37 (Android 17), 0.9.0 "Till hands" (plan §10 Fas 5, §5.5, §6.5) | **targetSdk 37 på main** för telefonappen, testappen (`:smoke`) och `:benchmark` (katalogens `targetSdk`); Wear OS-appen stannar på 36 med skälet skrivet. **Varje beteendeändring i Android 17** (för appar med target 37 och för alla appar, från developer.android.com) står i "Target SDK 37" med om den rör Tandem, var, och vad som gjordes. **Lokalt nätverk:** en server på hemnätverket (RFC 1918, länklokal, CGNAT utan VPN, IPv6 ULA/länklokal, direktanslutna rutter, `.local`) fungerar på Android 17: introt frågar `ACCESS_LOCAL_NETWORK` i sammanhanget innan något skickas (förklaring + Tillåt), ett nej ger felet "Tandem får inte använda ditt lokala nätverk" med vägen till Androids inställningar, en anslutning som ändå stoppas blir `TandemError.LocalNetworkDenied` (räknas som offline, aldrig kretsbrytaren) i stället för en timeout, och Mer → Behörigheter har raden Lokalt nätverk (bara på Android 17+); samma fråga och fel för Miniflux i inkorgens inställningar; beslutslogiken enhetstestad (adressreglerna, interceptorn, introts flöde, raden, Robolectric på SDK 36 och 37). **CI grönt**, röktestet kört på Googles API 37-emulator (`android-37.0`, `google_apis`, x86_64). | Klar: på main 39b0ad0f (2026-11-15); PR 43731863459, röktestet på API 37 43731863472 (`OK (14 tests)` + `OK (32 tests)`) |
 | las | Lås appen (plan §5.5, §10 Fas 5 "biometrisk lås"), 0.9.0 | **Av/på och tiderna:** Mer → Säkerhet → Lås appen är av som standard; att slå på kräver att telefonens skärmlås bekräftas en gång (systemets `BiometricPrompt`, `BIOMETRIC_STRONG` eller `DEVICE_CREDENTIAL`), och utan skärmlås går det inte att slå på (sidan förklarar och öppnar systemets säkerhetsinställningar). "Lås efter" Direkt / 1 min (standard) / 5 min / 15 min räknas **bara i bakgrunden** (processens ON_STOP, skärmen av inräknad) på `elapsedRealtime`; en kallstart låser alltid; att slå på låset med appen öppen låser den inte (`AppLockPolicyTest`, `DefaultAppLockTest` med falsk klocka, också en sovande telefon vars timer är sen). **Låst:** innehållet ritas inte, läses inte av TalkBack och kan inte tryckas på, låsskärmen ("Lås upp", prompten öppnas av sig själv) ligger i ett eget fönster över appens öppna ark och dialoger, Recents visar ingen bild (`setRecentsScreenshotEnabled(false)`, ingen FLAG_SECURE). **Undantagen bevisade med tester:** larmskärmen är en egen aktivitet på låsskärmen och varken den, timrarnas tjänst och mottagare, widgetarnas mottagare, rutan, klockans lyssnare eller butikspåminnelsens mottagare håller låset (`AppLockSurfacesTest`); notis, djuplänk, delning och genväg väntar och når sitt mål efter upplåsningen (`AppLockGateTest` med falsk autentiserare); widgetarna och rutan visar "Låst – öppna Tandem"/"Låst" medan låset är på (`WidgetStatesTest`, `WidgetSessionTest`); App Functions får `AppLock.unlockedWithinTimeout()`. Referensbilder och ATF för låsskärmen och sidan (telefon i båda orienteringar, surfplatta i båda, mörkt, svenska, teckenstorlek 2). Röktestet oförändrat (låset av). | ✅ klart i CI 2026-11-15 (PR 43739215393, röktest 43739215318: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)", Contract 43739215296 på 8e50683a; referensbilder från Screenshots 43734179632: bara nya bilder för låsskärmen, `app/*lock*` och `shell/lock_*`, inga befintliga ändrade); på telefonen återstår ägarens prov med fingeravtryck/pinkod och larmet medan appen är låst, se "Lås appen" |
+| integration-09 | 0.9.0 "Till hands": banorna sdk37, rss, las och funktioner samlade på main och prövade tillsammans; Fas 5 klar utom två recept sida vid sida (ägarens beslut efter köksprovet) | Alla fyra banorna på main; App Functions frågar `AppLock.unlockedWithinTimeout()` före varje läsning och skrivning och vägrar (`LOCKED`) medan appen är låst om inte "Tillåt assistenten när appen är låst" är på (`DefaultAssistantActionsTest`); inkorgens Miniflux-nyckel, val och inlägg går med kontot (`RecipeInboxSchedule` i `AccountRemovalHook`-mängden, `RecipeInboxRepositoryTest`); Android 17:s fråga om lokalt nätverk gäller också en Miniflux hemma (`LocalNetworkInterceptor` i Miniflux-klienten, `InboxProblem.LOCAL_NETWORK`); larmet, widgetarna och rutan hålls utanför låset (`AppLockSurfacesTest`, `WidgetStatesTest`); Mer visar Inkorg för recept och Assistenten sist under Inställningar, Lås appen under Säkerhet och Lokalt nätverk i Behörigheter, och gäster och demoläget följer samma regel i alla fyra. Röktestet **körs** med ett billigt nytt scenario (`Phase5TillHandsSmokeTest`: demoinkorgen → Importera → importens granskning, Mers nya sidor, låssidan utan skärmlås) och ryms med god marginal. versionCode 11, versionName 0.9.0 (klockan samma ur `app/build.gradle.kts`), CHANGELOG `[0.9.0] – 2026-11-15`, ROADMAP och RELEASE.md, torrkörning med båda APK:erna grön | pågår 2026-11-16 på grenen `fas5/integration-09` |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 sdk37 -->
@@ -1508,6 +1509,60 @@ syns inte). Förslag till integrationen: se publicApi i banans rapport.
 **Kvar (behöver enhet):** en riktig klocka med telefonen avstängd (bocka av i butiken, servern får det
 när klockan har nät), pågående aktivitet och larm på urtavlan, rutan, vridkronan.
 <!-- /Fas 5 klocka -->
+
+<!-- Fas 5 integration-09 -->
+## Integration av Fas 5 (0.9.0)
+
+Banorna sdk37, rss, las och funktioner kom till main var för sig (se raderna i "Fas 5 – läge");
+integrationen (`fas5/integration-09`) kontrollerade att de håller ihop, lade till ett billigt
+röktestscenario och satte versionen. Med 0.9.0 är Fas 5 klar, utom två recept sida vid sida i
+kokläget (beslutet "flikar på alla bredder" i "Kokläget i Fas 5" står kvar tills ägaren bestämmer sig
+efter köksprovet). Inte heller med: förnyelse av klockans token i bakgrunden och vad som händer med
+klockan vid kontobyte (öppna beslut), och ett Wear-röktest på en emulator.
+
+**Kontrollerat utan ändring (banorna hade redan kopplat ihop sig):**
+
+| Koppling | Var | Bevis |
+|---|---|---|
+| App Functions ↔ Lås appen | `AssistantModule` (`:core:sync`) ger `AssistantLockCheck` från `AppLock.unlockedWithinTimeout()`; `DefaultAssistantActions` frågar före varje funktion, efter "avstängt" och före inloggning, gäst och säkert läge; `openRecipe` ger en `PendingIntent` som öppnar låsskärmen först | `DefaultAssistantActionsTest` (alla fem funktionerna vägrar `LOCKED`, och svarar med "Tillåt assistenten när appen är låst"), `AppLockSettingsTest` (valet syns bara när låset och assistenten är på) |
+| Inkorgen ↔ kontot | `RecipeInboxSchedule` är en `AccountRemovalHook` (`RecipeInboxModule`): nyckeln, valen och inläggen glöms före att kontot tas bort, också ett sparat konto som inte är aktivt; `retainOnly` vid nästa start tar det som blev kvar | `RecipeInboxRepositoryTest.disconnectingAndTheAccountsRemovalForgetEverything`, `AccountIsolationTest` (`inbox_entry` i `deleteAccountData`) |
+| Lokalt nätverk ↔ Miniflux | `MinifluxModule` lägger `LocalNetworkInterceptor` i Miniflux-klienten; inkorgens inställningar frågar `LocalNetworkAccess.needsPermission` innan nyckeln skickas | `InboxSettingsViewModelTest`, `InboxScreenTest` (sdk37-banans block) |
+| Lås appen ↔ larm, widgetar, ruta, klocka, bakgrund | Larmskärmen är en egen aktivitet med `showWhenLocked`; widgetarna och rutan visar "Låst – öppna Tandem"/"Låst"; WorkManager, påminnelser och klockan hålls aldrig av låset | `AppLockSurfacesTest` (det sammanslagna manifestet), `WidgetStatesTest`, `WidgetSessionTest` |
+
+**Mer och inställningarna.** Under Inställningar står, sist och i den ordningen, Matsedeln i
+kalendern, Påminnelse nära butiken, Inkorg för recept och Assistenten; Lås appen har en egen rubrik
+Säkerhet under dem; Behörigheter har raden Lokalt nätverk (bara Android 17+). Inkorgen och
+assistenten finns också där de används (Recepts verktygsrad, Idag; telefonens assistent), låset på
+låsskärmen. **Gäster och demoläget** följer samma regel som i 0.8.0: det som skriver till servern
+(inkorgens import, assistentens "lägg till") är inte för gäster, som får läsa; demoläget har en
+inbyggd inkorg och svarar assistenten från demodatabasen, utan nät; låset gäller alla lägen. Inga
+nya notiskanaler (ingen bana behövde en), Room schema 7 (bara banan rss), inga nya referensbilder i
+integrationen.
+
+**Röktestet.** `Phase5TillHandsSmokeTest` (shard 1, som hade den kortare körningen, 16 min 49 s mot
+18 min 2 s på main 43776747628) i demoläget: Recepts inkorgsknapp, demoinlägget "Blueberry
+pancakes", förhandsvisningen och **Importera** öppnar importens granskning med inläggets adress
+(demoläget säger att en länk behöver en server); Mer → Inkorg för recept ("Not in demo mode"), Mer →
+Assistenten och Mer → Lås appen, som på emulatorn (utan skärmlås) visar "The phone has no screen
+lock"; inget anrop till servern. Det prövar att inkorgen, låssidan och assistentsidan överlever R8
+och hänger ihop i Mer. En inkorg mot en falsk Miniflux genom import till en falsk Tandoor (banan rss
+föreslog det) behöver ett `recipe-from-source`-svar och en falsk Miniflux över röktestets CA; den
+vägen bevisas av `InboxViewModelTest` (två tryck genom importens ViewModel) och
+`MinifluxContractTest`. Låset påslaget på emulatorn behöver en skärmlåskod och systemets
+kodskärm, som skulle låsa emulatorn för de andra klasserna i samma shard; det är inte byggt.
+
+**Version:** versionCode 11, versionName 0.9.0; klockappen läser båda raderna ur
+`app/build.gradle.kts` och får samma (`wear/build.gradle.kts`, se "Integration av Fas 5 (0.8.0)").
+`CHANGELOG.md` `[0.9.0] – 2026-11-15`; `[Unreleased]` är tom. docs/ROADMAP.md: Fas 5 klar utom två
+recept sida vid sida. docs/RELEASE.md: Miniflux contract hör till "grönt" före en tagg, och de nya
+behörigheterna (`ACCESS_LOCAL_NETWORK`, `USE_BIOMETRIC`) nämns i release-texten.
+
+**Kvar (behöver enhet):** inkorgen mot ägarens egen Miniflux med riktiga receptbloggar (banan rss);
+fingeravtryck/pinkod, ett ringande larm medan appen är låst och widgetarnas platshållare på en riktig
+startskärm (banan las); App Functions på en telefon med Android 16+ (`adb`-kommandona i "App
+Functions"; Gemini anropar ännu bara appar i Googles förhandsprogram, banan funktioner); en Tandoor
+på hemnätverket med en Android 17-telefon (banan sdk37).
+<!-- /Fas 5 integration-09 -->
 
 <!-- Fas 5 integration-08 -->
 ## Integration av Fas 5 (0.8.0)
@@ -6624,7 +6679,8 @@ den kod som skickas:
   lämnar APK:erna och mappningsfilen som artefakten `smoke-apks` (en dag). Två emulatorjobb
   (`smoke`, matris `shard` 1 och 2, högst 40 min vardera, `fail-fast: false`) laddar ner dem och kör
   `smoke-run.sh` parallellt: shard 1 kör klasserna i `SHARD_1_CLASSES` (`-e class`: Phase2,
-  Phase4, Phase1b, Phase2Accounts och ReleaseSmokeTest, ungefär 980 s), shard 2 alla andra
+  Phase4, Phase1b, Phase2Accounts och ReleaseSmokeTest, ungefär 980 s; sedan 0.9.0 också
+  Phase5TillHandsSmokeTest), shard 2 alla andra
   (`-e notClass`, ungefär 980 s), så en **ny** testklass hamnar i shard 2 utan att någon lista
   ändras. Delningen är räknad på klassernas tider på main (körning 43583033962: tidsstämpeln på
   varje klassrad i loggen är när klassen var klar); flytta en klass mellan listorna om ena halvan
