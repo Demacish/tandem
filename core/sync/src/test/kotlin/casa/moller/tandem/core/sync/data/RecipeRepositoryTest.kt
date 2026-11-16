@@ -256,7 +256,7 @@ class RecipeRepositoryTest {
     @Test
     fun safeModeHoldsTheOutboxUntilTheVersionIsTestedAgain() = runBlocking {
         graph.engine.run(SyncReason.FIRST_SYNC)
-        val untested = graph.remote.copy(account = graph.account.copy(serverVersion = "2.7.3"))
+        val untested = graph.remote.copy(account = graph.account.copy(serverVersion = "2.7.4"))
         graph.sources.source.value = untested
         repository.markViewed(2)
 

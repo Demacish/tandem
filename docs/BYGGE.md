@@ -1565,9 +1565,8 @@ andra grenar), oberoende av 0.9.0. Fakta som skiljer från baslinjen i Fas 2: `P
 /api/recipe/{id}/shopping/` svarar **500** (receptet till inköpslistan, med och utan måltid och med
 0 portioner), en gäst får 400 "You do not have the required permissions to create food" när en post
 skapar ett nytt livsmedel (tidigare 201), 403-texten för gästens `bulk` är ny, och receptböckerna har
-fältet `filter_id`. `TandoorVersionTable.TESTED` är oförändrad, så appen kör 2.7.3 i säkert läge
-(`UNTESTED_NEWER`) tills ägaren bestämt. Utrett och hanterat i banan komplettering-09, se "Tandoor
-2.7.3 (komplettering-09)".
+fältet `filter_id`. Utrett och hanterat i banan komplettering-09, se "Tandoor 2.7.3
+(komplettering-09)"; 2.7.3 står i `TandoorVersionTable.TESTED` sedan 2026-11-16 (ägarens beslut).
 
 **Kvar (behöver enhet):** inkorgen mot ägarens egen Miniflux med riktiga receptbloggar (banan rss);
 fingeravtryck/pinkod, ett ringande larm medan appen är låst och widgetarnas platshållare på en riktig
@@ -1637,9 +1636,11 @@ checkar bara ut webbens källkod för en riktig releasetagg, så `fas5.handla.we
 `report.py` jämför inte längre de nycklarna för en flytande tagg (`FLOATING_TAGS`); releasen som
 `latest` pekar på finns alltid i matrisen under sin egen tagg och jämförs fullt.
 
-**Inte gjort (ägarens beslut):** `TandoorVersionTable.TESTED` har inte 2.7.3. Med allt grönt kan
-`TandoorVersion(2, 7, 3)` läggas till (och `CapabilitiesTest`/`CompatibilityTest`) när ägaren
-godkänner det; tills dess kör en 2.7.3-server i säkert läge (skrivningar väntar).
+**2.7.3 i `TESTED` (ägarens beslut 2026-11-16):** med alla kontraktsklasser gröna mot 2.7.3 och
+bevakningen utan ogranskade skillnader står `TandoorVersion(2, 7, 3)` i `TandoorVersionTable.TESTED`
+(`CapabilitiesTest` och `CompatibilityTest` har 2.7.3 som testad och 2.7.4 som otestad; testerna
+av säkert läge i `:core:sync` använder 2.7.4). En 2.7.3-server skickar alltså skrivningar som
+vanligt.
 <!-- /Fas 5 komplettering-09 -->
 
 <!-- Fas 5 integration-08 -->
@@ -6387,7 +6388,8 @@ Redigerarens fakta jämfördes inte förrän komplettering 3 (körning 423090885
 och sviten har en 2.7-gren i `Phase0ContractTest` (inloggning, enhetstoken med `X-Session-Token`,
 utloggning, konto utan space, spärren 3 per minut). Fixturerna och skillnaderna står i
 `api-schema/fixtures/2.7.1/` (`FACTS.md`); `DtoFixturesTest` avkodar dem också. 2.7.1 och 2.7.2
-står i `TESTED` (2.7.2 sedan 2026-10-29: bevakningen grön utan andra skillnader än de granskade),
+står i `TESTED` (2.7.2 sedan 2026-10-29: bevakningen grön utan andra skillnader än de granskade;
+2.7.3 sedan 2026-11-16, se "Tandoor 2.7.3 (komplettering-09)"),
 och skillnaderna i `reviewed-changes.json` ("2.7"). **2.7.0 är inte testad med
 flit**: den nekar varje skrivning med token ("CSRF Failed", `SessionAuthentication` före
 OAuth2), så appen kör den i säkert läge; bevakningen testar bara den nyaste i varje linje, och

@@ -14,8 +14,8 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   och resten av ändringarna väntar, i stället för att skickas en efter en.
 - Felet i Tandoor 2.7.3 där ett recept inte går att lägga på inköpslistan från Tandoors API berör
   inte Tandem, som lägger på receptets varor på sitt eget sätt.
-- Tandem räknar fortfarande 2.7.3 som otestad (skrivningar väntar i säkert läge) tills versionen
-  har godkänts för appen.
+- Tandoor 2.7.3 räknas nu som testad: ändringar skickas som vanligt i stället för att vänta i
+  säkert läge.
 
 ## [0.9.0] – 2026-11-15
 
