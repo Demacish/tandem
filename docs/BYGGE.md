@@ -38,11 +38,12 @@ kan installeras bredvid release-bygget.
   enhetstester, och med AGP 9:s standard (`android.onlyEnableUnitTestForTheTestedBuildType`) har
   bara debug det, inte release eller minified. Ingen flagga stänger av den (bara
   `buildFeatures.compose`), men den skapas först när något ber om den. Ett beroende på
-  `tasks.matching { … }` skapar alla uppgifter i projektet och stoppade därför `ciTest`
-  ("Unit tests are disabled for this variant"); `AndroidRoborazziConventionPlugin` väljer
-  Roborazzi-uppgifterna med `tasks.named { … }`, som bara skapar de uppgifter vars namn matchar.
-  Använd aldrig `tasks.matching { … }` som beroende i build-logic, och slå inte på enhetstester
-  för release för att komma runt felet.
+  `tasks.matching { … }` skapar alla uppgifter i projektet och stoppade därför `ciTest` och
+  `updateRoborazziGoldens` ("Unit tests are disabled for this variant"); `tasks.named { … }` gör
+  likadant när den används som beroende (prövat i CI). `AndroidRoborazziConventionPlugin` väljer
+  därför Roborazzi-uppgifterna som **namn** ur `tasks.names` (`existingTaskNames`), som inte
+  skapar någon uppgift. Låt aldrig en uppgiftssamling vara beroende i build-logic, och slå inte på
+  enhetstester för release för att komma runt felet.
 - Sätt inte `android.builtInKotlin`, `android.newDsl`, `android.disallowKotlinSourceSets` eller
   `android.enableJetifier` i `gradle.properties`.
 - Bytekod: Java 17. CI kör på JDK 21 (krävs av Robolectric för SDK 36+).

@@ -1,6 +1,7 @@
 import casa.moller.tandem.buildlogic.withAndroid
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.testing.Test
@@ -77,19 +78,26 @@ class AndroidRoborazziConventionPlugin : Plugin<Project> {
                 }
                 into(goldens)
                 // Always from a fresh recording (run it with -Ptandem.screenshots.verify=false).
-                dependsOn(tasks.named { it == "recordRoborazziDebug" || it == "recordRoborazziSideloadDebug" })
+                dependsOn(existingTaskNames("recordRoborazziDebug", "recordRoborazziSideloadDebug"))
             }
 
             // ciTest (registered later by the library plugin or app/build.gradle.kts) records or
             // verifies the variant whose unit tests it runs: Debug, or SideloadDebug in :app.
-            // tasks.named { }, not tasks.matching { }: resolving a matching() collection creates EVERY
-            // task of the project, and AGP 9.5's generate<Variant>ComposePreviewRunfiles fails to be
-            // created for a variant without unit tests (release, minified; docs/BYGGE.md "Versioner").
             val mode = if (verify) "verify" else "record"
-            val roborazziTasks = tasks.named { it == "${mode}RoborazziDebug" || it == "${mode}RoborazziSideloadDebug" }
+            val roborazziTasks = existingTaskNames("${mode}RoborazziDebug", "${mode}RoborazziSideloadDebug")
             tasks.matching { it.name == "ciTest" }.configureEach { dependsOn(roborazziTasks) }
         }
     }
+
+    /**
+     * Those of [candidates] that are tasks of this project, as NAMES, read when the task graph is built.
+     * Never a task collection: resolving `tasks.matching { }` (or `tasks.named { }`) as a dependency
+     * creates every task of the project, and AGP 9.5's `generate<Variant>ComposePreviewRunfiles`
+     * fails to be created for a variant without unit tests (release, minified; docs/BYGGE.md
+     * "Versioner"). `tasks.names` creates nothing.
+     */
+    private fun Project.existingTaskNames(vararg candidates: String): Provider<List<String>> =
+        provider { candidates.filter { it in tasks.names } }
 
     private companion object {
         const val VERIFY_PROPERTY = "tandem.screenshots.verify"
