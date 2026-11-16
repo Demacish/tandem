@@ -35,6 +35,11 @@ NUMERIC_NOISE_KEYS = {"throttle.retryAfterHeader"}
 # Lists whose order means nothing and differs between versions (a recipe's keywords from a page).
 UNORDERED_KEYS = {"import.data.keywords"}
 MAX_DIFF_LINES = 80
+# Facts a floating tag never has: contract.yml checks out the web frontend only for a real release
+# tag (`matrix.tandoor != 'latest'`), so the web's merged-rows reference (Fas 5, lane handla) is
+# missing for `latest`. The release `latest` points at is always in the matrix by its own tag.
+FLOATING_TAGS = {"latest"}
+NOT_FOR_FLOATING_TAGS = ("fas5.handla.web.",)
 # Key prefix -> folder of its observed-facts.json in a recording. A new contract class that records
 # facts belongs here, or the watch never looks at them.
 PHASES = (
@@ -190,7 +195,12 @@ def main():
         elif reference is None or observed is None:
             changes = ["(no observed facts to compare)"]
         else:
-            changes, accepted = split_reviewed(reference, observed, reviewed_lines.get(line_of(version), {}))
+            if tag in FLOATING_TAGS:
+                compared = {k: v for k, v in reference.items() if not k.startswith(NOT_FOR_FLOATING_TAGS)}
+                observed = {k: v for k, v in observed.items() if not k.startswith(NOT_FOR_FLOATING_TAGS)}
+            else:
+                compared = reference
+            changes, accepted = split_reviewed(compared, observed, reviewed_lines.get(line_of(version), {}))
         if tag == BASELINE:
             counted = "reference"
         elif accepted:

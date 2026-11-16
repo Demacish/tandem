@@ -1631,7 +1631,11 @@ boken som appen nu gör (filterobjektet och `filter_id`) mot alla versioner.
 `scaling-golden.json` som är identisk), `DtoFixturesTest.everySuccessfulJsonFixtureOfTandoor273…`
 (`RecipeBookDto.filter_id` finns bara i 2.7.3:s inspelningar och undantas för de äldre). De 57
 skillnaderna mot 2.6.13 står granskade i `contract-tests/watch/reviewed-changes.json` under raden
-"2.7", så bevakningen bara säger "released but not in TandoorVersionTable.TESTED: 2.7.3".
+"2.7", så bevakningen bara säger "released but not in TandoorVersionTable.TESTED: 2.7.3". Sedan
+banan handla flaggade bevakningen också "observed facts changed in latest (6)" varje natt: contract.yml
+checkar bara ut webbens källkod för en riktig releasetagg, så `fas5.handla.web.*` saknas för `latest`.
+`report.py` jämför inte längre de nycklarna för en flytande tagg (`FLOATING_TAGS`); releasen som
+`latest` pekar på finns alltid i matrisen under sin egen tagg och jämförs fullt.
 
 **Inte gjort (ägarens beslut):** `TandoorVersionTable.TESTED` har inte 2.7.3. Med allt grönt kan
 `TandoorVersion(2, 7, 3)` läggas till (och `CapabilitiesTest`/`CompatibilityTest`) när ägaren
