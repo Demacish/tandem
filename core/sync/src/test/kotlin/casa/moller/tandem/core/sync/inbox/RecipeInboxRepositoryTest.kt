@@ -202,6 +202,67 @@ class RecipeInboxRepositoryTest {
         assertEquals(3, repository.entries.first().size)
     }
 
+    // --- fix-09: what the inbox's guard learnt outlasts the process ---
+
+    /** The same phone after a process restart: the stores and the posts stay, the guard starts empty. */
+    private fun restarted() = DefaultRecipeInboxRepository(
+        graph.sources,
+        graph.databases,
+        store,
+        keys,
+        miniflux.client(),
+        MinifluxGuard(graph.clock),
+        graph.clock,
+        demo,
+        graph.scope,
+    )
+
+    @Test
+    fun aRefusedKeyStaysStoppedAfterAProcessRestart() = runBlocking {
+        setUp()
+        miniflux.key = "a-new-key-on-the-server"
+        val refused = repository.refresh(background = true)
+        assertEquals(InboxProblem.AUTH, InboxFailure.problemOf((refused as Outcome.Failure).error))
+        assertTrue(store.records.value.getValue(ACCOUNT_ID).keyRefused)
+
+        val later = restarted()
+        val sent = miniflux.requests.size
+        // A "read" mark waits, the 4-hourly work runs, the user opens the inbox and the category picker.
+        later.dismiss(later.entries.first().first().id)
+        delay(SETTLE_MILLIS)
+        val background = later.refresh(background = true)
+        assertEquals(InboxProblem.AUTH, InboxFailure.problemOf((background as Outcome.Failure).error))
+        assertTrue(later.refresh(background = false) is Outcome.Failure)
+        assertTrue(later.serverCategories() is Outcome.Failure)
+        assertEquals("nothing is sent with the refused key", sent, miniflux.requests.size)
+        assertEquals(InboxProblem.AUTH, later.state.first().settings.problem)
+
+        // A new key lifts it, and the waiting mark goes with the next refresh.
+        assertTrue(later.connect(miniflux.baseUrl, "a-new-key-on-the-server") is Outcome.Success)
+        assertFalse(store.records.value.getValue(ACCOUNT_ID).keyRefused)
+        assertEquals(Outcome.Success(Unit), later.refresh(background = true))
+        assertEquals(2, later.entries.first().size)
+    }
+
+    @Test
+    fun aRetryAfterOutlastsAProcessRestart() = runBlocking {
+        setUp()
+        miniflux.override = { MockResponse.Builder().code(429).addHeader("Retry-After", "600").body("{}").build() }
+        val throttled = repository.refresh(background = true)
+        assertEquals(InboxProblem.THROTTLED, InboxFailure.problemOf((throttled as Outcome.Failure).error))
+        miniflux.override = null
+
+        val later = restarted()
+        val sent = miniflux.requests.size
+        val held = later.refresh(background = false)
+        assertEquals(InboxProblem.THROTTLED, InboxFailure.problemOf((held as Outcome.Failure).error))
+        assertEquals("the server asked for ten minutes", sent, miniflux.requests.size)
+
+        graph.clock.advance(11.minutes)
+        assertEquals(Outcome.Success(Unit), later.refresh(background = true))
+        assertNull(store.records.value.getValue(ACCOUNT_ID).holdUntilMillis)
+    }
+
     @Test
     fun theTandoorGuardNeverStopsTheInbox() = runBlocking {
         setUp()

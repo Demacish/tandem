@@ -33,6 +33,10 @@ interface RecipeInboxStore {
  * @property serverUrl the Miniflux address (normalized), null when not set up.
  * @property categories the chosen categories (id and title, the title only for the screen).
  * @property problem the name of an `InboxProblem` of the last refresh, null after a success.
+ * @property keyRefused fix-09: Miniflux refused the stored key (401/403); nothing is sent with it
+ *   again, also in a new process, until a key is entered (`connect`).
+ * @property holdUntilMillis fix-09: a 429 (`Retry-After`) or firewall pause of the inbox's guard,
+ *   on the wall clock, so it also holds in a new process; null when there is none.
  */
 @Serializable
 data class RecipeInboxRecord(
@@ -42,6 +46,9 @@ data class RecipeInboxRecord(
     val showOnToday: Boolean = true,
     val lastRefreshMillis: Long? = null,
     val problem: String? = null,
+    // --- fix-09 ---
+    val keyRefused: Boolean = false,
+    val holdUntilMillis: Long? = null,
 )
 
 /** A chosen Miniflux category. */

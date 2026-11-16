@@ -24,6 +24,10 @@ import kotlinx.coroutines.flow.update
  * - **Circuit breaker:** more than [BREAKER_MAX_ERRORS] other errors within [BREAKER_WINDOW] pause the
  *   BACKGROUND refresh for [BREAKER_PAUSE]; what the user starts (open the inbox, pull to refresh)
  *   still goes. Connectivity problems never count.
+ *
+ * The state lives in memory; what must outlast the process (a refused key, a 429 or firewall pause)
+ * the repository also stores in the account's `RecipeInboxRecord` ([isRefused], [holdUntil]) and
+ * checks before anything is sent (fix-09).
  */
 @Singleton
 internal class MinifluxGuard @Inject constructor(private val clock: SyncClock) {
@@ -89,6 +93,20 @@ internal class MinifluxGuard @Inject constructor(private val clock: SyncClock) {
         }
     }
 
+    /** Whether Miniflux refused [accountId]'s key with fingerprint [keyFingerprint] (fix-09: stored by the repository). */
+    fun isRefused(accountId: String, keyFingerprint: Int): Boolean =
+        state.value.let { it.accountId == accountId && it.refusedKey == keyFingerprint }
+
+    /**
+     * Until when (wall clock) everything of [accountId] waits for a 429 or a firewall pause, null when
+     * nothing does (fix-09: stored by the repository). The breaker's pause is not included: it holds
+     * back only the background, and only in this process.
+     */
+    fun holdUntil(accountId: String): Long? {
+        val current = state.value.takeIf { it.accountId == accountId } ?: return null
+        return maxOf(current.throttledUntil, current.blockedUntil).takeIf { it > clock.nowMillis() }
+    }
+
     /** A new key, a disconnect or another account: a clean slate. */
     fun reset() {
         state.value = State()
@@ -103,5 +121,8 @@ internal class MinifluxGuard @Inject constructor(private val clock: SyncClock) {
         const val BREAKER_MAX_ERRORS: Int = 3
         const val BREAKER_WINDOW: Long = 10 * 60_000L
         const val BREAKER_PAUSE: Long = 30 * 60_000L
+
+        /** fix-09: the longest stored pause; one further away (a clock set back) is not honoured. */
+        const val LONGEST_HOLD: Long = BLOCKED_MAX
     }
 }

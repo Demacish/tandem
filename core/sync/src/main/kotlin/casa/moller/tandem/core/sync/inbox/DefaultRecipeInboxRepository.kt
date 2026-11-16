@@ -124,6 +124,10 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
         }
         val key = apiKey.trim()
         if (key.isEmpty()) return inboxFailure(InboxProblem.AUTH)
+        // fix-09: a 429 or firewall pause stored by an earlier process still holds for the same server
+        // (a refused key does not: this is the new key).
+        val stored = store.observe(remote.accountId).first()
+        if (stored.serverUrl == server.toString()) storedHold(stored.copy(keyRefused = false))?.let { return inboxFailure(it) }
         val categories = mutex.withLock {
             // A key the user typed now: only what protects the server holds it back.
             guard.check(remote.accountId, key.hashCode(), background = false)?.let { return inboxFailure(it) }
@@ -150,7 +154,7 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
             } else {
                 emptyList()
             }
-            old.copy(serverUrl = serverText, categories = kept, problem = null)
+            old.copy(serverUrl = serverText, categories = kept, problem = null, keyRefused = false, holdUntilMillis = null)
         }
         // Another server's posts are not this one's (the ids are per server).
         if (!sameServer) dao.deleteAccount(remote.accountId)
@@ -160,7 +164,9 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
 
     override suspend fun serverCategories(): Outcome<List<InboxCategory>> {
         val remote = remote() ?: return noAccount()
-        val server = serverOf(store.observe(remote.accountId).first()) ?: return inboxFailure(InboxProblem.INVALID_URL)
+        val record = store.observe(remote.accountId).first()
+        val server = serverOf(record) ?: return inboxFailure(InboxProblem.INVALID_URL)
+        storedHold(record)?.let { return inboxFailure(it) }
         return keys.useKey(remote.accountId) { key ->
             mutex.withLock {
                 guard.check(remote.accountId, key.hashCode(), background = false)?.let { return@withLock inboxFailure(it) }
@@ -224,12 +230,23 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
         val record = store.observe(remote.accountId).first()
         val server = serverOf(record)
         if (server == null || record.categories.isEmpty()) return Outcome.Success(Unit)
+        // fix-09: what the guard of an earlier process learnt still holds; nothing is sent.
+        storedHold(record)?.let { return inboxFailure(it) }
+        var refused = false
         val result = keys.useKey(remote.accountId) { key ->
-            mutex.withLock { refreshLocked(remote.accountId, server, key, record.categories, background) }
+            mutex.withLock {
+                refreshLocked(remote.accountId, server, key, record.categories, background)
+                    .also { refused = guard.isRefused(remote.accountId, key.hashCode()) }
+            }
         } ?: inboxFailure(InboxProblem.AUTH)
         val problem = (result as? Outcome.Failure)?.error?.let(InboxFailure::problemOf)
+        val holdUntil = guard.holdUntil(remote.accountId)
         store.update(remote.accountId) { old ->
-            if (problem == null) old.copy(lastRefreshMillis = clock.nowMillis(), problem = null) else old.copy(problem = problem.name)
+            if (problem == null) {
+                old.copy(lastRefreshMillis = clock.nowMillis(), problem = null, keyRefused = false, holdUntilMillis = null)
+            } else {
+                old.copy(problem = problem.name, keyRefused = refused, holdUntilMillis = holdUntil)
+            }
         }
         return result
     }
@@ -307,13 +324,41 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
      */
     private fun sendReadsSoon(accountId: String) {
         scope.launch {
-            val server = serverOf(store.observe(accountId).first()) ?: return@launch
+            val record = store.observe(accountId).first()
+            val server = serverOf(record) ?: return@launch
+            if (storedHold(record) != null) return@launch
             keys.useKey(accountId) { key ->
                 mutex.withLock {
                     if (guard.check(accountId, key.hashCode(), background = false) == null) sendReadsLocked(accountId, server, key)
+                    rememberGuard(accountId, key)
                 }
             }
         }
+    }
+
+    /** fix-09: a refused key or a pause the guard learnt outside a refresh (a "read" mark) is stored too. */
+    private suspend fun rememberGuard(accountId: String, key: String) {
+        val refused = guard.isRefused(accountId, key.hashCode())
+        val holdUntil = guard.holdUntil(accountId)
+        if (!refused && holdUntil == null) return
+        store.update(accountId) { old ->
+            old.copy(
+                problem = if (refused) InboxProblem.AUTH.name else old.problem,
+                keyRefused = old.keyRefused || refused,
+                holdUntilMillis = holdUntil ?: old.holdUntilMillis,
+            )
+        }
+    }
+
+    /**
+     * fix-09: what [MinifluxGuard] learnt in an earlier process and the record keeps: a refused key
+     * (until a key is entered), a 429 or firewall pause (until its time). Null = may send.
+     */
+    private fun storedHold(record: RecipeInboxRecord): InboxProblem? {
+        if (record.keyRefused) return InboxProblem.AUTH
+        val left = (record.holdUntilMillis ?: return null) - clock.nowMillis()
+        if (left <= 0 || left > MinifluxGuard.LONGEST_HOLD) return null
+        return if (record.problem == InboxProblem.THROTTLED.name) InboxProblem.THROTTLED else InboxProblem.PAUSED
     }
 
     /** One Miniflux request, recorded by the guard. */
