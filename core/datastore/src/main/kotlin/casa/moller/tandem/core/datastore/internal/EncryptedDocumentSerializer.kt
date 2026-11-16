@@ -22,6 +22,21 @@ internal class UnreadableDocumentException(val reason: RecoveryReason, causeType
     IOException("Secure account document unreadable: $reason ($causeType)")
 
 /**
+ * The [UnreadableDocumentException.reason] that [EncryptedDocumentSerializer.readFrom] put under
+ * this exception, or null when the corruption did not come from it. Searched along the whole
+ * cause chain: since 1.3.0 DataStore wraps a serializer's [CorruptionException] in one of its own
+ * ("Corruption in file ...", FileStorage), so the reason is no longer the direct [cause].
+ */
+internal fun CorruptionException.unreadableReason(): RecoveryReason? = generateSequence<Throwable>(this) { it.cause }
+    .take(MAX_CAUSE_DEPTH)
+    .filterIsInstance<UnreadableDocumentException>()
+    .firstOrNull()
+    ?.reason
+
+/** Bound for [unreadableReason]: a cause chain can be cyclic. */
+private const val MAX_CAUSE_DEPTH = 8
+
+/**
  * Serializes [SecureDocument] as JSON and encrypts the whole document with the AEAD from
  * [keys], using [associatedData] to bind the ciphertext to its file.
  *

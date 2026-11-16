@@ -36,6 +36,16 @@ kan installeras bredvid release-bygget.
 - compileSdk 37 är ett krav (Compose 1.12, core 1.19, material3 1.5 och Navigation 3 kräver det).
   Förhandsbiblioteken är material3 1.5.0-beta02 (Expressive), inkapslat i `core:designsystem`, och
   `androidx.appfunctions` 1.0.0-beta01 (Fas 5, bara i `:app`, se "App Functions").
+- DataStore 1.3.0 (2026-10-21, Renovate #5). `datastore-tink` är stabil sedan 1.3.0 men används
+  inte: `AeadSerializer` vill ha en färdig `Aead` och gör varje dekrypteringsfel till en
+  `CorruptionException`, så ett Keystore som inte svarar just nu och en förlorad nyckel ser
+  likadana ut. `core:datastore` behåller sin egen serialiserare (`EncryptedDocumentSerializer`).
+  1.3.0 lägger serialiserarens `CorruptionException` inuti en egen ("Corruption in file …",
+  `FileStorage`), så orsaken (`UnreadableDocumentException`) är inte längre den direkta `cause` i
+  undantaget som felhanteraren får. Kontosparet letar därför längs hela orsakskedjan
+  (`unreadableReason()`); utan det blev en oanvändbar nyckel "kontona går inte att läsa" i stället
+  för `KEY_UNUSABLE` (`EncryptedAccountStoreTest.unusableKeyIsResetAndFlagged`). Beteendet är
+  detsamma som på 1.2.1: nycklarna nollställs, sparet töms och återställningen flaggas.
 
 ## Byggvarianter
 

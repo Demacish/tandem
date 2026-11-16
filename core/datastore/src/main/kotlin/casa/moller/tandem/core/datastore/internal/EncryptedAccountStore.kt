@@ -44,8 +44,7 @@ internal class EncryptedAccountStore(
     private val dataStore: DataStore<SecureDocument> = DataStoreFactory.create(
         serializer = EncryptedDocumentSerializer(keys, associatedData, keyRetryDelaysMillis),
         corruptionHandler = ReplaceFileCorruptionHandler<SecureDocument> { exception ->
-            val reason = (exception.cause as? UnreadableDocumentException)?.reason
-                ?: RecoveryReason.ACCOUNTS_UNREADABLE
+            val reason = exception.unreadableReason() ?: RecoveryReason.ACCOUNTS_UNREADABLE
             health.report(reason)
             if (reason == RecoveryReason.KEY_UNUSABLE) keys.reset()
             SecureDocument()

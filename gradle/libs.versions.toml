@@ -47,7 +47,12 @@ coil = "3.6.3"
 browser = "1.10.0"
 
 # --- Data / background ---
-datastore = "1.3.0"       # datastore-tink exists only as 1.3.0-alpha -> own Tink Serializer on stable 1.2.1
+# datastore-tink is stable since 1.3.0 but not used: AeadSerializer needs a ready Aead (the Keystore
+# must answer before the store exists) and makes every decrypt error a CorruptionException, so a busy
+# Keystore and a lost key look the same -> own Tink Serializer (core:datastore EncryptedDocumentSerializer).
+# 1.3.0 wraps a serializer's CorruptionException in its own ("Corruption in file ..."): the account
+# store reads its reason from the whole cause chain (docs/BYGGE.md "Versioner").
+datastore = "1.3.0"
 tink = "1.23.0"
 room3 = "3.0.3"           # androidx.room3 (fallback: androidx.room 2.8.5)
 paging = "3.5.3"

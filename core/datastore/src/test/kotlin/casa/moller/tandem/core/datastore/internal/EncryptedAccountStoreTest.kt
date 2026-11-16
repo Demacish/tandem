@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.datastore.internal
 
+import androidx.datastore.core.CorruptionException
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import casa.moller.tandem.core.datastore.DatastoreFiles
@@ -189,6 +190,19 @@ class EncryptedAccountStoreTest {
         store.upsert(SECOND, TOKEN_2)
         assertEquals(listOf(SECOND), store.accounts.first())
         assertEquals(TOKEN_2, store.token(SECOND.id))
+    }
+
+    @Test
+    fun corruptionReasonIsFoundBehindDataStoresOwnCorruptionException() {
+        val fromSerializer = CorruptionException(
+            "Secure account document unreadable",
+            UnreadableDocumentException(RecoveryReason.KEY_UNUSABLE, null),
+        )
+        assertEquals(RecoveryReason.KEY_UNUSABLE, fromSerializer.unreadableReason())
+        // DataStore 1.3.0 (FileStorage) hands the corruption handler its own wrapper.
+        val fromDataStore = CorruptionException("Corruption in file secure_accounts", fromSerializer)
+        assertEquals(RecoveryReason.KEY_UNUSABLE, fromDataStore.unreadableReason())
+        assertNull(CorruptionException("Corruption in file secure_accounts", CorruptionException("not ours")).unreadableReason())
     }
 
     @Test
