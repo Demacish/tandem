@@ -212,8 +212,6 @@ class DefaultAppLockTest {
 
         override val settings: Flow<AppSettings> = state
 
-        override suspend fun update(transform: (AppSettings) -> AppSettings) {
-            throw IOException("test: settings could not be written")
-        }
+        override suspend fun update(transform: (AppSettings) -> AppSettings): Unit = throw IOException("test: not written")
     }
 }

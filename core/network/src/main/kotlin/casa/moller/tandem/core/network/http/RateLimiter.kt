@@ -115,10 +115,8 @@ class RateLimitInterceptor(private val bucket: TokenBucket) : Interceptor {
  * use up the Tandoor server's image budget, and each server still gets at most the bucket's rate.
  * At most [maxOrigins] buckets are kept (the least recently used is dropped; a new one starts full).
  */
-class PerOriginRateLimitInterceptor(
-    private val maxOrigins: Int = DEFAULT_MAX_ORIGINS,
-    private val newBucket: () -> TokenBucket,
-) : Interceptor {
+class PerOriginRateLimitInterceptor(private val maxOrigins: Int = DEFAULT_MAX_ORIGINS, private val newBucket: () -> TokenBucket) :
+    Interceptor {
     private val buckets = object : LinkedHashMap<String, TokenBucket>(INITIAL_CAPACITY, LOAD_FACTOR, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, TokenBucket>?): Boolean = size > maxOrigins
     }
