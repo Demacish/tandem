@@ -29,7 +29,10 @@ appen är byggd för Android 17.
   din Miniflux-server. Utloggning, ett borttaget konto och "Koppla från" tar bort nyckeln, valen och
   inläggen från telefonen.
 - Miniflux får ett eget skydd: en nyckel som nekas stoppar inkorgen tills du anger en ny, och fel hos
-  Miniflux pausar aldrig synken med Tandoor (eller tvärtom).
+  Miniflux pausar aldrig synken med Tandoor (eller tvärtom). Stoppet och en paus som Miniflux bett om
+  gäller också efter att appen eller telefonen startats om.
+- Bilderna i inkorgen kommer från bloggarnas egna servrar och räknas för sig: bilder som saknas där
+  pausar aldrig receptbilderna från Tandoor, och Tandoors bilder får hela sin egen takt.
 - Gäster kan läsa inkorgen men inte importera. Demoläget har en liten inbyggd inkorg.
 
 **Till hands: lås appen**
@@ -40,7 +43,8 @@ appen är byggd för Android 17.
   och öppnar telefonens inställningar i stället.
 - **Lås efter:** Direkt, 1 minut (standard), 5 eller 15 minuter i bakgrunden. Tiden räknas bara när
   appen inte syns, så kokläget och köksskärmen låses aldrig medan de är framme. En omstart av appen
-  låser den alltid.
+  låser den alltid, och om telefonen för ett ögonblick inte kan läsa appens inställningar förblir
+  appen låst tills den kan.
 - Medan appen är låst syns inget av innehållet, inte heller i listan över senaste appar. Skärmbilder
   går fortfarande att ta. En notis, en länk, en delning till Tandem eller en genväg väntar bakom
   låset och öppnas när du har låst upp.
