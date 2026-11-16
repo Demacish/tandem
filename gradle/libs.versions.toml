@@ -62,7 +62,7 @@ retrofit = "3.0.0"        # depends on OkHttp 4.12; our explicit OkHttp 5 pin wi
 okhttp = "5.5.0"
 kotlinxSerialization = "1.11.0"
 kotlinxCoroutines = "1.11.0"
-kotlinxDatetime = "0.8.0"
+kotlinxDatetime = "0.8.0-0.6.x-compat"
 
 # --- Tests ---
 junit4 = "4.13.2"         # Android/Robolectric/Compose UI tests
