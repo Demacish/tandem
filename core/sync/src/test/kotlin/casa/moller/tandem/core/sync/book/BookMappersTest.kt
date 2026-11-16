@@ -13,7 +13,8 @@ import org.junit.Test
 class BookMappersTest {
     @Test
     fun theFilterObjectGivesTheFilterAsBefore() {
-        val row = book("""{"id": 7, "name": "Snabbt", "filter": {"id": 3, "search": "{\"keywords_or\":[8]}"}}""").toEntity(ACCOUNT, emptySet())
+        val dto = book("""{"id": 7, "name": "Snabbt", "filter": {"id": 3, "search": "{\"keywords_or\":[8]}"}}""")
+        val row = dto.toEntity(ACCOUNT, emptySet())
         assertEquals(3L, row?.filterId)
         assertEquals(RecipeBookKinds.SMART, row?.kind)
     }

@@ -996,7 +996,8 @@ class Phase2ContractTest {
             val observed = facts[key] ?: described.takeIf { key.endsWith(".status") }
             if (observed != Facts.toJson(expected)) mismatches += "$key: expected ${Facts.toJson(expected)}, observed $observed"
         }
-        assertTrue(mismatches.isEmpty(), "Observed facts differ from the baseline of $serverVersion:\n" + mismatches.joinToString("\n"))
+        val report = "Observed facts differ from the baseline of $serverVersion:\n" + mismatches.joinToString("\n")
+        assertTrue(mismatches.isEmpty(), report)
     }
 
     // --- Helpers --------------------------------------------------------------------------------
