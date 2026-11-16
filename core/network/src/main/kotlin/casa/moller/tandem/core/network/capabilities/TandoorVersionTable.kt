@@ -37,15 +37,16 @@ data class VersionAssessment(
  *   beyond those. 2.7.3: only the group `user` may create a food, meal type or shopping list (a
  *   guest's nested create gets 400, handled by `NestedCreateRefusal`), and some fields became
  *   read-only with an `_id` field next to them (the app sends `filter_id`); its broken
- *   `PUT /api/recipe/{id}/shopping/` is one the app never calls (BYGGE "Tandoor 2.7.3"). **2.7.0 is not tested on purpose**: it refuses every write with a token ("CSRF
- *   Failed", fixed in 2.7.1), so it runs in safe mode. Add a version here when the nightly run
+ *   `PUT /api/recipe/{id}/shopping/` is one the app never calls (BYGGE "Tandoor 2.7.3").
+ *   **2.7.0 is not tested on purpose**: it refuses every write with a token ("CSRF Failed", fixed
+ *   in 2.7.1), so it runs in safe mode. Add a version here when the nightly run
  *   against it is green.
  * - **Supported range**: `>= 2.6.0 < 2.8.0`. An untested version inside it runs in safe mode.
  * - Older 2.x (2.0.0 to 2.5.x) may log in and runs in safe mode (plan 4.5: any Tandoor >= 2.0);
  *   1.x is refused. Newer than the range: reading works, writes are disabled.
  */
 object TandoorVersionTable {
-    val TESTED: List<TandoorVersion> = (0..15).map { TandoorVersion(2, 6, it) } + listOf(TandoorVersion(2, 7, 1), TandoorVersion(2, 7, 2), TandoorVersion(2, 7, 3))
+    val TESTED: List<TandoorVersion> = (0..15).map { TandoorVersion(2, 6, it) } + (1..3).map { TandoorVersion(2, 7, it) }
 
     /** First version of the supported range (inclusive). */
     val SUPPORTED_FROM: TandoorVersion = TandoorVersion(2, 6, 0)
