@@ -1,7 +1,9 @@
 package casa.moller.tandem.core.network.image
 
+import casa.moller.tandem.core.network.http.PerOriginRateLimitInterceptor
 import casa.moller.tandem.core.network.http.RateLimitInterceptor
 import casa.moller.tandem.core.network.http.TandemHttpClients
+import casa.moller.tandem.core.network.http.TokenBucket
 import casa.moller.tandem.core.network.http.TokenProvider
 import casa.moller.tandem.core.network.http.await
 import casa.moller.tandem.core.network.testing.HttpsServerRule
@@ -10,6 +12,7 @@ import casa.moller.tandem.core.network.testing.testClient
 import java.io.IOException
 import kotlinx.coroutines.runBlocking
 import mockwebserver3.MockResponse
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.junit.Assert.assertEquals
@@ -82,10 +85,9 @@ class ImageClientTest {
         assertEquals(TandemHttpClients.IMAGE_MAX_REQUESTS_PER_HOST, imageBase.dispatcher.maxRequestsPerHost)
         assertEquals(TandemHttpClients.MAX_REQUESTS_PER_HOST, apiClient.dispatcher.maxRequestsPerHost)
         val apiLimiters = apiClient.interceptors.filterIsInstance<RateLimitInterceptor>()
-        val imageLimiters = imageBase.interceptors.filterIsInstance<RateLimitInterceptor>()
         assertEquals(1, apiLimiters.size)
-        assertEquals(1, imageLimiters.size)
-        assertNotSame(apiLimiters.single(), imageLimiters.single())
+        assertTrue(imageBase.interceptors.none { it is RateLimitInterceptor })
+        assertEquals(1, imageBase.interceptors.filterIsInstance<PerOriginRateLimitInterceptor>().size)
         // Same connection pool, User-Agent and HTTPS rule.
         assertSame(apiClient.connectionPool, imageBase.connectionPool)
         assertTrue(imageBase.followRedirects)
@@ -128,5 +130,39 @@ class ImageClientTest {
         now = 500
         client.get(tandoor.url("/media/b.png"))
         assertFalse("the first error is outside the window", breaker.isOpen())
+    }
+
+    // --- fix-09: third-party images (the recipe inbox) never pause or slow the Tandoor server's ---
+
+    @Test
+    fun fiveForeignHost404sDoNotPauseTheTandoorOrigin() {
+        var now = 0L
+        val breaker = ImageErrorBreakerInterceptor(nanoTime = { now })
+        val client = TandoorImageClientFactory(TandemHttpClients.images(apiClient, breaker = breaker)).create(tandoor.url("/"), token)
+        repeat(ImageErrorBreakerInterceptor.DEFAULT_THRESHOLD) { otherHost.enqueue(emptyResponse(404)) }
+        repeat(ImageErrorBreakerInterceptor.DEFAULT_THRESHOLD) { assertEquals(404, client.get(otherHost.url("/blog/gone_$it.jpg"))) }
+        assertTrue("the blog host is paused", breaker.isOpen(otherHost.url("/").toHttpUrl()))
+        assertThrows(IOException::class.java) { client.get(otherHost.url("/blog/next.jpg")) }
+
+        assertFalse("the Tandoor origin is not", breaker.isOpen(tandoor.url("/").toHttpUrl()))
+        tandoor.enqueue(png())
+        assertEquals(200, client.get(tandoor.url("/media/recipes/a_2.png")))
+        assertEquals("/media/recipes/a_2.png", tandoor.takeRequest().url.encodedPath)
+    }
+
+    @Test
+    fun eachOriginHasItsOwnImageBudget() {
+        val created = mutableListOf<TokenBucket>()
+        val client = TandoorImageClientFactory(
+            TandemHttpClients.images(apiClient, newRateLimiter = { TokenBucket(100, 100).also { created += it } }),
+        ).create(tandoor.url("/"), token)
+        otherHost.enqueue(png())
+        tandoor.enqueue(png())
+        assertEquals(200, client.get(otherHost.url("/blog/a.jpg")))
+        assertEquals(200, client.get(tandoor.url("/media/recipes/a_2.png")))
+        assertEquals("one bucket per origin", 2, created.size)
+        otherHost.enqueue(png())
+        assertEquals(200, client.get(otherHost.url("/blog/b.jpg")))
+        assertEquals("the same origin reuses its bucket", 2, created.size)
     }
 }

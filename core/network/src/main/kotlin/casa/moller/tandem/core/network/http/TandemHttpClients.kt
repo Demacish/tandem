@@ -97,16 +97,17 @@ object TandemHttpClients {
      * The base client for images (plan 3.4, 4.1): the same pipeline as [base] (HTTPS only,
      * User-Agent, timeouts, connection pool, debug logging), but with
      * - its own [Dispatcher] ([IMAGE_MAX_REQUESTS_PER_HOST], [IMAGE_MAX_REQUESTS]) and its own
-     *   [TokenBucket] ([IMAGE_PERMITS_PER_SECOND]) instead of the API's, so images never use up
-     *   the two API slots or the API's rate budget;
-     * - an [ImageErrorBreakerInterceptor] in front of the rate limit;
+     *   [TokenBucket]s ([IMAGE_PERMITS_PER_SECOND], one per origin: [PerOriginRateLimitInterceptor])
+     *   instead of the API's, so images never use up the two API slots or the API's rate budget,
+     *   and third-party images (the recipe inbox) never use up the Tandoor server's;
+     * - an [ImageErrorBreakerInterceptor] (counted per origin) in front of the rate limit;
      * - redirects followed (external media storage), but never from https to http.
      *
      * Per-account clients with the token come from `TandoorImageClientFactory`.
      */
     fun images(
         base: OkHttpClient,
-        rateLimiter: TokenBucket = TokenBucket(IMAGE_PERMITS_PER_SECOND, IMAGE_PERMITS_PER_SECOND),
+        newRateLimiter: () -> TokenBucket = { TokenBucket(IMAGE_PERMITS_PER_SECOND, IMAGE_PERMITS_PER_SECOND) },
         breaker: ImageErrorBreakerInterceptor = ImageErrorBreakerInterceptor(),
     ): OkHttpClient {
         val dispatcher = Dispatcher().apply {
@@ -119,7 +120,7 @@ object TandemHttpClients {
             .followSslRedirects(false)
         builder.interceptors().removeAll { it is RateLimitInterceptor }
         builder.addInterceptor(breaker)
-        builder.addInterceptor(RateLimitInterceptor(rateLimiter))
+        builder.addInterceptor(PerOriginRateLimitInterceptor(newBucket = newRateLimiter))
         return builder.build()
     }
 }

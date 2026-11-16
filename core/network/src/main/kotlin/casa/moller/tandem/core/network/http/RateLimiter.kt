@@ -2,6 +2,7 @@ package casa.moller.tandem.core.network.http
 
 import java.io.IOException
 import java.io.InterruptedIOException
+import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -107,3 +108,36 @@ class RateLimitInterceptor(private val bucket: TokenBucket) : Interceptor {
         return chain.proceed(chain.request())
     }
 }
+
+/**
+ * Fas 5 (fix-09): like [RateLimitInterceptor], but with one [TokenBucket] per origin (scheme,
+ * host, port), for the image clients: the recipe inbox's third-party blog and CDN images never
+ * use up the Tandoor server's image budget, and each server still gets at most the bucket's rate.
+ * At most [maxOrigins] buckets are kept (the least recently used is dropped; a new one starts full).
+ */
+class PerOriginRateLimitInterceptor(
+    private val maxOrigins: Int = DEFAULT_MAX_ORIGINS,
+    private val newBucket: () -> TokenBucket,
+) : Interceptor {
+    private val buckets = object : LinkedHashMap<String, TokenBucket>(INITIAL_CAPACITY, LOAD_FACTOR, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, TokenBucket>?): Boolean = size > maxOrigins
+    }
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val call = chain.call()
+        bucketFor(originKey(chain.request().url)).acquire { call.isCanceled() }
+        return chain.proceed(chain.request())
+    }
+
+    @Synchronized
+    private fun bucketFor(origin: String): TokenBucket = buckets.getOrPut(origin, newBucket)
+
+    companion object {
+        const val DEFAULT_MAX_ORIGINS: Int = 64
+        private const val INITIAL_CAPACITY = 16
+        private const val LOAD_FACTOR = 0.75f
+    }
+}
+
+/** Fas 5 (fix-09): what the image rate limit and the image breaker count per: scheme, host and port. */
+fun originKey(url: HttpUrl): String = "${url.scheme}://${url.host}:${url.port}"

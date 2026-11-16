@@ -14,6 +14,8 @@ import okhttp3.Request
  * The OkHttp side of Coil's network fetcher: every image request goes through the ACTIVE
  * account's image client from core:network ([TandoorImageClientFactory]: its own dispatcher and
  * rate limit, the token only for the account's own origin, a pause after repeated 4xx answers).
+ * The pause and the rate limit count per origin (fix-09), so the recipe inbox's third-party blog
+ * and CDN images, loaded through the same pipeline, never pause or slow the Tandoor server's images.
  * Without an account (demo mode, logged out) the base image client without any token is used.
  */
 @Singleton
