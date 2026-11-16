@@ -1343,22 +1343,10 @@ class Phase2ContractTest {
         /** Facts a broken PUT cannot give (the second PUT is not sent). */
         val NOT_WITH_BROKEN_RECIPE_SHOPPING_PUT: Set<String> = setOf("recipeShopping.putServings.foods")
 
-        /** `2.7.3` -> [2, 7, 3]; null for `latest`, a development build or anything unreadable. */
-        fun versionOf(text: String?): List<Int>? =
-            Regex("^(\\d+)\\.(\\d+)\\.(\\d+)").find(text.orEmpty())?.groupValues?.drop(1)?.map { it.toInt() }
-
-        private fun atLeast(version: List<Int>?, vararg minimum: Int): Boolean {
-            if (version == null) return false
-            for (i in minimum.indices) {
-                if (version[i] != minimum[i]) return version[i] > minimum[i]
-            }
-            return true
-        }
-
         /** The names of the expectation sets [expectedFor] applies to [version]. */
         fun expectationsOf(version: String?): List<String> = buildList {
             add("EXPECTED")
-            if (atLeast(versionOf(version), 2, 7, 3)) add("SINCE_2_7_3")
+            if (TandoorRelease.atLeast(version, 2, 7, 3)) add("SINCE_2_7_3")
             if (version in RECIPE_SHOPPING_PUT_BROKEN) add("WITH_BROKEN_RECIPE_SHOPPING_PUT")
         }
 

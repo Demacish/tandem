@@ -73,6 +73,9 @@ class PhaseSContractTest {
     private val facts = Facts()
     private val mismatches = mutableListOf<String>()
 
+    /** `version` of server-settings: picks the expectations of [expectedFor]. */
+    private var serverVersion: String? = null
+
     /** The contract user's household as `{id, name}` (from `user-space/all_personal`). */
     private var household: JsonObject? = null
     private val foodIds = LinkedHashMap<String, Long>()
@@ -99,6 +102,8 @@ class PhaseSContractTest {
         env.fasSRecordDir.mkdirs()
         facts["tandoorTag"] = env.tag
         facts["runDay"] = today.toString()
+        val settings = api("server-settings", "GET", "/api/server-settings/current/", record = false)
+        serverVersion = (settings.json as? JsonObject)?.stringAt("version")
     }
 
     @AfterAll
@@ -912,12 +917,12 @@ class PhaseSContractTest {
     @Test
     @Order(99)
     fun everyFactMatchesTheBaseline() {
-        for ((key, expected) in EXPECTED) {
+        for ((key, expected) in expectedFor(serverVersion)) {
             val described = (facts[key.removeSuffix(".status")] as? JsonObject)?.get("status")
             val observed = facts[key] ?: described.takeIf { key.endsWith(".status") }
             if (observed != Facts.toJson(expected)) mismatches += "$key: expected ${Facts.toJson(expected)}, observed $observed"
         }
-        assertTrue(mismatches.isEmpty(), "Observed facts differ from the Fas S baseline:\n" + mismatches.joinToString("\n"))
+        assertTrue(mismatches.isEmpty(), "Observed facts differ from the Fas S baseline of $serverVersion:\n" + mismatches.joinToString("\n"))
     }
 
     // --- Helpers ------------------------------------------------------------------------------------
@@ -1280,5 +1285,20 @@ class PhaseSContractTest {
             "automation.delete.status" to 204,
             "automation.deleted.get.status" to 404,
         )
+
+        /**
+         * Releases whose `POST /api/inventory-location/` without `household` answers 500 instead of
+         * 400: 2.7.3 made `household` read-only and `household_id` optional, so the missing household
+         * reaches the database (NOT NULL). The app never sends a location without its household
+         * (PantryOutboxHandlers refuses it locally), so only the documented status changes.
+         */
+        val NO_HOUSEHOLD_IS_A_SERVER_ERROR: Set<String> = setOf("2.7.3")
+
+        /** [EXPECTED] for the server's [version]. */
+        fun expectedFor(version: String?): Map<String, Any?> {
+            val expected = LinkedHashMap(EXPECTED)
+            if (version in NO_HOUSEHOLD_IS_A_SERVER_ERROR) expected["inventoryLocation.createNoHousehold.status"] = 500
+            return expected
+        }
     }
 }
