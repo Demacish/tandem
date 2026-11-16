@@ -51,12 +51,18 @@ avinstallera appen (och förlora lokal data) och installera om.
 1. Höj `versionCode` (alltid +1) och `versionName` i `app/build.gradle.kts`. Taggen måste vara
    `v` + `versionName`, annars stoppar `release.yml` innan något byggs. Klockappen (`:wear`, sedan
    0.8.0) läser båda raderna därifrån, så den får alltid samma `versionCode` och `versionName` som
-   telefonen; ändra inte radernas form (`versionCode = 10`, `versionName = "0.8.0"`).
+   telefonen; ändra inte radernas form (`versionCode = 11`, `versionName = "0.9.0"`).
 2. Skriv avsnittet för versionen i `CHANGELOG.md` (svenska, **krävs**), med rubriken
    `## [0.0.1] – 2026-10-10`, `## v0.0.1` eller `## 0.0.1`. Saknas avsnittet stoppar
    `release.yml` innan något byggs (plan §4.4: release med svensk changelog). En torrkörning
    varnar bara.
-3. Committa till `main` när CI är grönt, och tagga:
+3. Committa till `main` när CI är grönt, och tagga. "Grönt" är PR, Release smoke test, Contract och
+   (sedan 0.9.0) **Miniflux contract** (`miniflux-contract.yml`, kontraktstestet för inkorgen mot en
+   tillfällig Miniflux) på taggens commit. Miniflux contract körs bara när dess egna sökvägar
+   ändras; har den inte körts sedan förra releasen, starta den för hand:
+   `gh workflow run miniflux-contract.yml --ref main`. `release.yml` kör inte kontraktstesterna.
+   Nya behörigheter står i release-texten (0.9.0: Enheter i närheten för en server på hemnätverket
+   på Android 17, frågas i sammanhanget; biometri för Lås appen, utan fråga):
 
    ```sh
    git tag -a v0.0.1 -m "Tandem 0.0.1"
@@ -93,7 +99,7 @@ kör `gh release create`. Det körs bara för en riktig release.
 | build: Bygge | `:app:assembleSideloadRelease` (R8 + resurskrympning), `:app:bundlePlayRelease` och (sedan 0.8.0) klockappen `:wear:assembleRelease`, utan configuration cache (den skulle spara lösenorden). Signeringen läses i `app/build.gradle.kts` bara från `TANDEM_KEYSTORE_PATH`, `TANDEM_KEYSTORE_PASSWORD`, `TANDEM_KEY_ALIAS` och `TANDEM_KEY_PASSWORD`; utan dem blir release-bygget osignerat. Signeringsschema v3 (med minSdk 34 hoppar signeraren över v2 och v1). |
 | build: Kontroll | `apksigner verify --print-certs --min-sdk-version 34`, kräver "Verifies", schema v3 och exakt en signerare, jämför fingeravtrycket med `TANDEM_CERT_SHA256` (saknas variabeln stoppas en riktig release). Klockans APK kontrolleras likadant och måste ha **samma** certifikat som telefonens (Wear Data Layer kopplar bara ihop appar med samma paketnamn och nyckel), annars stoppas jobbet. `SHA256SUMS` täcker båda APK:erna och båda mappningsfilerna. |
 | build: Artefakt | `dist/` (APK, `tandem-X.Y.Z-sideload-mapping.txt`, `tandem-wear-X.Y.Z.apk`, `tandem-wear-X.Y.Z-mapping.txt`, `SHA256SUMS`, `release-notes.md`) och Play-AAB:n, 90 dagar. AAB:n laddas inte upp till Play ännu (Fas P). |
-| smoke | **Krav före publicering.** Anropar `smoke.yml`: den R8-minifierade appen (samma R8-konfiguration som releasen) loggar in mot en falsk Tandoor på en emulator, överlever processdöd och kallstart och loggar ut (`docs/BYGGE.md`, "Release-röktest"). Fallerar den, eller kraschar appen, publiceras ingenting. Körs inte vid torrkörningar på lane-grenar; där kör `smoke.yml` själv vid varje push som inte bara ändrar dokumentation, enhetstester eller kontraktstester. |
+| smoke | **Krav före publicering.** Anropar `smoke.yml`: den R8-minifierade appen (samma R8-konfiguration som releasen) loggar in mot en falsk Tandoor på två emulatorer (API 37 sedan 0.9.0), överlever processdöd och kallstart och loggar ut (`docs/BYGGE.md`, "Release-röktest"). Fallerar den, eller kraschar appen, publiceras ingenting. Körs inte vid torrkörningar på lane-grenar; där kör `smoke.yml` själv vid varje push som inte bara ändrar dokumentation, enhetstester eller kontraktstester. |
 | publish | Körs bara om `smoke` gick igenom. Laddar ner artefakten, kontrollerar `SHA256SUMS` och skapar GitHub Release `vX.Y.Z` med `tandem-X.Y.Z-sideload.apk`, `tandem-X.Y.Z-sideload-mapping.txt`, klockappen `tandem-wear-X.Y.Z.apk` med `tandem-wear-X.Y.Z-mapping.txt` och `SHA256SUMS`, och changelog-avsnittet som text. Mappningsfilen ligger kvar i releasen så länge den finns, så kraschrapporter går att läsa även efter artefaktens 90 dagar. Den är publik, precis som källkoden. Publiceras bara om emulatorjobbet i `smoke.yml` faktiskt kördes och gick igenom. |
 
 ### Torrkörning

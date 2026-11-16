@@ -118,9 +118,9 @@ Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
   text (0.6.0). Länken finns inte i demoläget, för gäster eller när utrymmet har delning avstängd.
 
 ## Fas 5: Plattform
-Fasen är löpande och släpps i flera versioner. Första delen, **0.7.0 "I köket"** (2026-11-13), och
-andra delen, **0.8.0 "På språng"** (2026-11-14), levererade punkterna markerade ✅. Resten kommer i
-senare versioner: en inkorg för recept från RSS, App Functions, biometriskt lås och target SDK 37.
+Fasen kom i tre versioner: **0.7.0 "I köket"** (2026-11-13), **0.8.0 "På språng"**
+(2026-11-14) och **0.9.0 "Till hands"** (2026-11-15) levererade punkterna markerade ✅. Fas 5 är
+därmed klar, utom två recept sida vid sida i kokläget, som ägaren bestämmer om efter köksprovet.
 
 - ✅ Handsfree-kokläge (0.7.0): volymknapparna byter steg, "nästa", "tillbaka" och "upprepa" med
   taligenkänning i telefonen (aldrig via nätet) och uppläsning av stegen. Av som standard; slås på i
@@ -148,12 +148,24 @@ senare versioner: en inkorg för recept från RSS, App Functions, biometriskt l�
 - ✅ Påminnelse nära butiken (0.8.0): en notis per besök när något står kvar på listan, med
   geofences och platser som stannar i telefonen. Kvar: provet i en riktig butik och batteriet under
   en dag.
+- ✅ Inkorg för recept (0.9.0): olästa inlägg i valda kategorier i din egen Miniflux visas under
+  Recept (och, om du vill, på Idag) och importeras med två tryck genom samma granskning som en delad
+  länk. Av som standard; nyckeln stannar krypterad i telefonen. Kvar: provet mot en riktig
+  Miniflux-server med riktiga receptbloggar. Vanliga RSS-flöden direkt i appen (utan Miniflux) är
+  inte byggda.
+- ✅ Lås appen (0.9.0): fingeravtryck, ansikte eller telefonens skärmlås, efter vald tid i
+  bakgrunden. Timrar, larm, påminnelser, synk och klockan fungerar utan att låsa upp; widgetarna visar
+  "Låst". Av som standard. Kvar: provet på en riktig telefon.
+- ✅ App Functions (0.9.0, Android 16 och senare): telefonens assistent kan lägga till på
+  inköpslistan ("lägg till mjölk på listan"), läsa listan och matsedeln, söka recept och öppna ett.
+  Av som standard, aldrig medan appen är låst om du inte tillåter det. Kvar: provet med en riktig
+  assistent.
+- ✅ Target SDK 37 (0.9.0): appen följer Android 17:s regler, också behörigheten för servrar på
+  hemnätverket (Tandoor och Miniflux). Klockappen stannar på target SDK 36.
 
-Kommer senare:
+Inte byggt (ägarens beslut efter köksprovet):
 
-- Inkorg för recept från RSS-flöden.
-- App Functions (appen nås från systemets assistent), biometriskt lås, target SDK 37.
-- Två recept sida vid sida i kokläget på en riktigt bred skärm (0.7.0 har flikar på alla bredder).
+- Två recept sida vid sida i kokläget på en riktigt bred skärm (Fas 5 har flikar på alla bredder).
 
 ## Övrigt
 - **Distribution:** GitHub Releases + Obtainium nu, Google Play senare. F-Droid är inte planerat.

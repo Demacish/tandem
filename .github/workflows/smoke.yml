@@ -272,7 +272,8 @@ jobs:
       fail-fast: false
       matrix:
         # Shard 1 runs the classes listed here, shard 2 every other class (also every new one).
-        # Balanced by their times on main (run 43583033962): about 980 s of tests each.
+        # Balanced by their times on main (run 43583033962): about 980 s of tests each; the 0.9.0
+        # integration added Phase5TillHandsSmokeTest to shard 1, which had the shorter run (43776747628).
         include:
           - shard: 1
             filter: class
@@ -280,7 +281,7 @@ jobs:
             filter: notClass
     env:
       SHARD_1_CLASSES: >-
-        casa.moller.tandem.smoke.Phase2SmokeTest,casa.moller.tandem.smoke.Phase4SmokeTest,casa.moller.tandem.smoke.Phase1bSmokeTest,casa.moller.tandem.smoke.Phase2AccountsSmokeTest,casa.moller.tandem.smoke.ReleaseSmokeTest
+        casa.moller.tandem.smoke.Phase2SmokeTest,casa.moller.tandem.smoke.Phase4SmokeTest,casa.moller.tandem.smoke.Phase1bSmokeTest,casa.moller.tandem.smoke.Phase2AccountsSmokeTest,casa.moller.tandem.smoke.ReleaseSmokeTest,casa.moller.tandem.smoke.Phase5TillHandsSmokeTest
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -6,7 +6,14 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
-**Inkorg för recept** (Fas 5, bana rss)
+## [0.9.0] – 2026-11-15
+
+Fas 5, tredje och sista delen: Till hands. Receptinkorgen samlar nya recept från din egen
+Miniflux och importerar dem med två tryck, appen kan låsas med telefonens skärmlås, och telefonens
+assistent kan lägga till på inköpslistan och läsa matsedeln. Allt är av tills du slår på det, och
+appen är byggd för Android 17.
+
+**Till hands: inkorg för recept**
 
 - **Inkorg för recept från din egen Miniflux:** under Mer → Inställningar → Inkorg för recept anger
   du adressen till din Miniflux-server och en API-nyckel (skapas i Miniflux under Inställningar →
@@ -25,7 +32,24 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   Miniflux pausar aldrig synken med Tandoor (eller tvärtom).
 - Gäster kan läsa inkorgen men inte importera. Demoläget har en liten inbyggd inkorg.
 
-**Assistenten** (Fas 5, bana funktioner)
+**Till hands: lås appen**
+
+- **Lås appen med telefonens skärmlås:** under Mer → Säkerhet → Lås appen kan du kräva fingeravtryck,
+  ansikte eller telefonens pinkod, mönster eller lösenord för att öppna Tandem. Av som standard. När
+  du slår på låset bekräftar du skärmlåset en gång; har telefonen inget skärmlås förklarar sidan det
+  och öppnar telefonens inställningar i stället.
+- **Lås efter:** Direkt, 1 minut (standard), 5 eller 15 minuter i bakgrunden. Tiden räknas bara när
+  appen inte syns, så kokläget och köksskärmen låses aldrig medan de är framme. En omstart av appen
+  låser den alltid.
+- Medan appen är låst syns inget av innehållet, inte heller i listan över senaste appar. Skärmbilder
+  går fortfarande att ta. En notis, en länk, en delning till Tandem eller en genväg väntar bakom
+  låset och öppnas när du har låst upp.
+- Timrar och larm (också helskärmslarmet på telefonens låsskärm med Stopp och +1 min), notiserna,
+  synken, påminnelserna och klockan fungerar som vanligt utan att du låser upp. Widgetarna och
+  snabbinställningen "Handla" visar "Låst – öppna Tandem" i stället för listan och måltiderna så
+  länge låset är på, och genvägarna till senast lagade recept tas bort.
+
+**Till hands: assistenten**
 
 - **"Lägg till mjölk på listan" med telefonens assistent:** på Android 16 och senare kan en assistent
   på telefonen (till exempel Gemini, när Google släpper in fler appar) lägga till varor på
@@ -49,23 +73,6 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   nej visar Tandem hur du tillåter den i Androids inställningar, och Mer → Behörigheter visar
   läget. Samma sak gäller din Miniflux för inkorgen. En server på internet behöver ingen
   behörighet.
-
-**Lås appen** (Fas 5, bana las)
-
-- **Lås appen med telefonens skärmlås:** under Mer → Säkerhet → Lås appen kan du kräva fingeravtryck,
-  ansikte eller telefonens pinkod, mönster eller lösenord för att öppna Tandem. Av som standard. När
-  du slår på låset bekräftar du skärmlåset en gång; har telefonen inget skärmlås förklarar sidan det
-  och öppnar telefonens inställningar i stället.
-- **Lås efter:** Direkt, 1 minut (standard), 5 eller 15 minuter i bakgrunden. Tiden räknas bara när
-  appen inte syns, så kokläget och köksskärmen låses aldrig medan de är framme. En omstart av appen
-  låser den alltid.
-- Medan appen är låst syns inget av innehållet, inte heller i listan över senaste appar. Skärmbilder
-  går fortfarande att ta. En notis, en länk, en delning till Tandem eller en genväg väntar bakom
-  låset och öppnas när du har låst upp.
-- Timrar och larm (också helskärmslarmet på telefonens låsskärm med Stopp och +1 min), notiserna,
-  synken, påminnelserna och klockan fungerar som vanligt utan att du låser upp. Widgetarna och
-  snabbinställningen "Handla" visar "Låst – öppna Tandem" i stället för listan och måltiderna så
-  länge låset är på, och genvägarna till senast lagade recept tas bort.
 
 ## [0.8.0] – 2026-11-14
 
