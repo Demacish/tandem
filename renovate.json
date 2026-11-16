@@ -151,6 +151,13 @@
       ],
       "groupName": "Gradle wrapper",
       "automerge": false
+    },
+    {
+      "description": "kotlinx-datetime: never the -0.6.x-compat artifact, which keeps the old Instant API for libraries built against 0.6 and is not an upgrade of 0.8.0.",
+      "matchPackageNames": [
+        "org.jetbrains.kotlinx:kotlinx-datetime"
+      ],
+      "allowedVersions": "!/-compat$/"
     }
   ]
 }

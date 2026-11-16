@@ -34,7 +34,7 @@ kan installeras bredvid release-bygget.
   (`wearTargetSdk` i katalogen); se "Target SDK 37". Robolectric kör enhetstesterna på SDK 36
   (`config/robolectric/robolectric.properties`); Android 17-tester väljer 37 med `@Config`.
 - compileSdk 37 är ett krav (Compose 1.12, core 1.19, material3 1.5 och Navigation 3 kräver det).
-  Förhandsbiblioteken är material3 1.5.0-beta01 (Expressive), inkapslat i `core:designsystem`, och
+  Förhandsbiblioteken är material3 1.5.0-beta02 (Expressive), inkapslat i `core:designsystem`, och
   `androidx.appfunctions` 1.0.0-beta01 (Fas 5, bara i `:app`, se "App Functions").
 
 ## Byggvarianter
@@ -85,7 +85,7 @@ Alla moduler för Fas 1a, 1b, 2 och S finns redan i `settings.gradle.kts`. Nya b
 |---|---|
 | `tandem.android.application` | `com.android.application`, compileSdk/minSdk/targetSdk från katalogen, Java 17, lint- och testinställningar |
 | `tandem.android.library` | `com.android.library` med samma inställningar. Namespace blir automatiskt `casa.moller.tandem.<modulsökväg>` (`:core:network` → `casa.moller.tandem.core.network`). Registrerar `ciTest` (`testDebugUnitTest`) och `ciLint` (ktlint + `lintDebug`) |
-| `tandem.android.compose` | Compose-kompilatorn, Compose BOM, `compose-ui`-bundeln (material3 1.5.0-beta01), tooling, Compose UI-test och Roborazzi-bibliotek för tester |
+| `tandem.android.compose` | Compose-kompilatorn, Compose BOM, `compose-ui`-bundeln (material3 1.5.0-beta02), tooling, Compose UI-test och Roborazzi-bibliotek för tester |
 | `tandem.android.hilt` | KSP + Hilt (`hilt-android`, `ksp(hilt-compiler)`), ingen kapt |
 | `tandem.android.feature` | library + compose + hilt, plus `core:{data,domain,ui,designsystem,model,common}`, `hilt-lifecycle-viewmodel-compose`, lifecycle-compose och Navigation 3 |
 | `tandem.android.test` | `com.android.test` (test-APK mot en annan moduls APK: `:smoke`, `:benchmark`) med samma SDK-nivåer och Java 17, ktlint. Registrerar `ciLint` (ktlint + detekt) |
@@ -729,7 +729,7 @@ passera som "ett annat hushåll". Det viktigaste (allt i FACTS "Fas S"):
 | `androidx.camera:camera-{core,camera2,lifecycle,view}` (bundle `camerax`) | 1.6.2 (2026-08-26) | `:feature:scan` | 1.7.0 är rc |
 | `com.google.mlkit:barcode-scanning` | 17.3.0 | `:feature:scan` | **bundlad** modell (tflite + `libbarhopper_v3.so` per ABI i APK:n), inte `play-services-mlkit-*` |
 | `com.google.mlkit:text-recognition` | 16.0.1 | `:feature:scan` | bundlad latinsk modell |
-| `com.anthropic:anthropic-java` | 2.72.0 (2026-10-14) | `:core:ai` | 2.73.0 och senare var under två veckor gamla; drar in Jackson 2.19, `kotlin-reflect`, OpenTelemetry API och OkHttp 4.12 (vår OkHttp 5.5 vinner). Biblioteket har egna R8-regler (`META-INF/proguard/`) |
+| `com.anthropic:anthropic-java` | 2.75.0 (2026-10-20) | `:core:ai` | Samma beroenden som 2.72.0; drar in Jackson 2.19, `kotlin-reflect`, OpenTelemetry API och OkHttp 4.12 (vår OkHttp 5.5 vinner). Biblioteket har egna R8-regler (`META-INF/proguard/`) |
 | `org.jetbrains.kotlin:kotlin-reflect` | = Kotlin (2.4.21) | `:core:ai` | SDK:n vill ha 1.9.0; låst till vår Kotlin |
 
 Publicerade `.sha1` kontrollerades vid hämtningen 2026-10-29 för CameraX-, ML Kit- och SDK-jararna.
@@ -6416,7 +6416,9 @@ för patch-/digestuppdateringar av testbibliotek och Actions, och bara när CI �
 automerge-gren som ligger efter `main` rebasas först och slås ihop först när CI är grönt mot det
 **aktuella** `main` (med `conflicted` slogs den ihop på en bas den aldrig testats mot). Grenar
 utan automerge rebasas bara vid konflikt, så att de inte kör om röktestet varje gång `main` rör
-sig. Allt annat granskas för hand.
+sig. Allt annat granskas för hand. `kotlinx-datetime` får aldrig en `-0.6.x-compat`-version (den
+behåller det gamla `Instant`-API:t för bibliotek byggda mot 0.6 och är ingen uppgradering av 0.8.0;
+Renovate föreslog den som PR #10 2026-11-16, stängd).
 Dependency Dashboard-ärendet visar vad som väntar. Fixturer och skript undantas.
 Go har bara en version att uppdatera: `golang:…-alpine` i `push-service/Dockerfile`.
 `push-service.yml` läser den ur `FROM`-raden, så samma PR flyttar tester och image.

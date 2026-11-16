@@ -83,7 +83,7 @@ uiautomator = "2.4.0"     # release smoke test (:smoke), black-box UI driver
 # light-mode `detekt` task is used (no type resolution), so a parser that knows our syntax is
 # what matters.
 detekt = "2.0.0-alpha.6"
-composeRulesDetekt = "0.6.8"  # io.nlopez.compose.rules for detekt 2.0.0-alpha.6 (0.6.8 is < 2 weeks old)
+composeRulesDetekt = "0.6.8"  # io.nlopez.compose.rules for detekt 2.0.0-alpha.6 (0.6.8: 2026-10-09)
 benchmark = "1.5.0"           # androidx.benchmark: Macrobenchmark (:benchmark)
 profileinstaller = "1.4.1"    # installs the baseline profile on sideloaded (non-Play) installs
 # --- butik lane (Fas 5, 0.8.0 "På språng", plan §7 #34), verified 2026-11-14 against Google Maven
@@ -99,7 +99,7 @@ playServicesLocation = "21.4.0"
 camerax = "1.6.2"                 # 2026-08-26 (1.7.0 is rc)
 mlkitBarcodeScanning = "17.3.0"   # com.google.mlkit (bundled model), not play-services-mlkit-*
 mlkitTextRecognition = "16.0.1"   # bundled Latin text recognizer
-anthropicJava = "2.75.0"          # 2026-10-14; 2.73.0+ (2026-10-15 and later) were < 2 weeks old
+anthropicJava = "2.75.0"          # 2026-10-20; same dependencies as 2.72.0
 
 # --- wear lane (Fas 5, 0.8.0 "På språng", plan §7 #33, B15), verified 2026-11-13 against Google
 # Maven (release date >= 2 weeks before, published .sha1 checked on download). The Wear OS app
