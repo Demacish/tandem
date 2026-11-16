@@ -1,0 +1,977 @@
+{
+  "name": "recipe-kanelbullar",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/4/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 4,
+      "name": "Kanelbullar",
+      "description": "",
+      "image": null,
+      "keywords": [
+        {
+          "id": 4,
+          "name": "Bakning",
+          "label": "Bakning",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Bakning"
+        }
+      ],
+      "steps": [
+        {
+          "id": 5,
+          "name": "Degen",
+          "instruction": "Smula {{ ingredients[1] }} i en bunke och värm {{ ingredients[2].food }} och smör till 37 grader.",
+          "ingredients": [
+            {
+              "id": 15,
+              "food": null,
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "Deg",
+              "order": 0,
+              "is_header": true,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 16,
+              "food": {
+                "id": 21,
+                "name": "jäst",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "jäst",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 50.0,
+              "conversions": [
+                {
+                  "food": "jäst",
+                  "unit": "g",
+                  "amount": 50.0
+                },
+                {
+                  "food": "jäst",
+                  "unit": "kg",
+                  "amount": 0.05
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 17,
+              "food": {
+                "id": 19,
+                "name": "mjölk",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "mjölk",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 5.0,
+              "conversions": [
+                {
+                  "food": "mjölk",
+                  "unit": "dl",
+                  "amount": 5.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "ml",
+                  "amount": 500.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "cup",
+                  "amount": 2.113375
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "l",
+                  "amount": 0.5
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "msk",
+                  "amount": 33.814
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "tsk",
+                  "amount": 101.442
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 18,
+              "food": {
+                "id": 20,
+                "name": "smör",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "smör",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 150.0,
+              "conversions": [
+                {
+                  "food": "smör",
+                  "unit": "g",
+                  "amount": 150.0
+                },
+                {
+                  "food": "smör",
+                  "unit": "kg",
+                  "amount": 0.15
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 19,
+              "food": {
+                "id": 22,
+                "name": "socker",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "socker",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "socker",
+                  "unit": "dl",
+                  "amount": 1.0
+                },
+                {
+                  "food": "socker",
+                  "unit": "ml",
+                  "amount": 100.0
+                },
+                {
+                  "food": "socker",
+                  "unit": "cup",
+                  "amount": 0.422675
+                },
+                {
+                  "food": "socker",
+                  "unit": "l",
+                  "amount": 0.1
+                },
+                {
+                  "food": "socker",
+                  "unit": "msk",
+                  "amount": 6.7628
+                },
+                {
+                  "food": "socker",
+                  "unit": "tsk",
+                  "amount": 20.2884
+                }
+              ],
+              "note": "",
+              "order": 4,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 20,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 0.5,
+              "conversions": [
+                {
+                  "food": "salt",
+                  "unit": "tsk",
+                  "amount": 0.5
+                },
+                {
+                  "food": "salt",
+                  "unit": "cup",
+                  "amount": 0.010416666666666666
+                },
+                {
+                  "food": "salt",
+                  "unit": "l",
+                  "amount": 0.0024644624514500897
+                },
+                {
+                  "food": "salt",
+                  "unit": "ml",
+                  "amount": 2.46446245145009
+                },
+                {
+                  "food": "salt",
+                  "unit": "msk",
+                  "amount": 0.16666666666666666
+                }
+              ],
+              "note": "",
+              "order": 5,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 21,
+              "food": {
+                "id": 23,
+                "name": "kardemumma",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "kardemumma",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "kardemumma",
+                  "unit": "tsk",
+                  "amount": 1.0
+                },
+                {
+                  "food": "kardemumma",
+                  "unit": "cup",
+                  "amount": 0.020833333333333332
+                },
+                {
+                  "food": "kardemumma",
+                  "unit": "l",
+                  "amount": 0.004928924902900179
+                },
+                {
+                  "food": "kardemumma",
+                  "unit": "ml",
+                  "amount": 4.92892490290018
+                },
+                {
+                  "food": "kardemumma",
+                  "unit": "msk",
+                  "amount": 0.3333333333333333
+                }
+              ],
+              "note": "stött",
+              "order": 6,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 22,
+              "food": {
+                "id": 12,
+                "name": "vetemjöl",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "vetemjöl",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 13.0,
+              "conversions": [
+                {
+                  "food": "vetemjöl",
+                  "unit": "dl",
+                  "amount": 13.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "ml",
+                  "amount": 1300.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "g",
+                  "amount": 780.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "cup",
+                  "amount": 5.494775000000001
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "l",
+                  "amount": 1.3
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "msk",
+                  "amount": 87.91640000000001
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "tsk",
+                  "amount": 263.7492
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "kg",
+                  "amount": 0.78
+                }
+              ],
+              "note": "",
+              "order": 7,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Smula <scalable-number v-bind:number=\"50.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> g jäst i en bunke och värm mjölk och smör till 37 grader.</p>",
+          "time": 15,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 6,
+          "name": "Jäsning",
+          "instruction": "Låt degen jäsa under bakduk.",
+          "ingredients": [],
+          "instructions_markdown": "<p>Låt degen jäsa under bakduk.</p>",
+          "time": 60,
+          "order": 1,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 7,
+          "name": "Fyllning och gräddning",
+          "instruction": "Bred fyllningen över degen, rulla och skär i {{ scale(30) }} bitar. Grädda i 250 grader.",
+          "ingredients": [
+            {
+              "id": 23,
+              "food": null,
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "Fyllning",
+              "order": 0,
+              "is_header": true,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 24,
+              "food": {
+                "id": 20,
+                "name": "smör",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "smör",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 100.0,
+              "conversions": [
+                {
+                  "food": "smör",
+                  "unit": "g",
+                  "amount": 100.0
+                },
+                {
+                  "food": "smör",
+                  "unit": "kg",
+                  "amount": 0.1
+                }
+              ],
+              "note": "rumsvarmt",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 25,
+              "food": {
+                "id": 22,
+                "name": "socker",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "socker",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 0.75,
+              "conversions": [
+                {
+                  "food": "socker",
+                  "unit": "dl",
+                  "amount": 0.75
+                },
+                {
+                  "food": "socker",
+                  "unit": "ml",
+                  "amount": 75.0
+                },
+                {
+                  "food": "socker",
+                  "unit": "cup",
+                  "amount": 0.31700625
+                },
+                {
+                  "food": "socker",
+                  "unit": "l",
+                  "amount": 0.075
+                },
+                {
+                  "food": "socker",
+                  "unit": "msk",
+                  "amount": 5.0721
+                },
+                {
+                  "food": "socker",
+                  "unit": "tsk",
+                  "amount": 15.216299999999999
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 26,
+              "food": {
+                "id": 24,
+                "name": "kanel",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "kanel",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 6,
+                "name": "msk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tbsp",
+                "open_data_slug": null
+              },
+              "amount": 1.5,
+              "conversions": [
+                {
+                  "food": "kanel",
+                  "unit": "msk",
+                  "amount": 1.5
+                },
+                {
+                  "food": "kanel",
+                  "unit": "cup",
+                  "amount": 0.09375
+                },
+                {
+                  "food": "kanel",
+                  "unit": "l",
+                  "amount": 0.022180162063050807
+                },
+                {
+                  "food": "kanel",
+                  "unit": "ml",
+                  "amount": 22.18016206305081
+                },
+                {
+                  "food": "kanel",
+                  "unit": "tsk",
+                  "amount": 4.499999999999999
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 27,
+              "food": null,
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "Pensling",
+              "order": 4,
+              "is_header": true,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 28,
+              "food": {
+                "id": 18,
+                "name": "ägg",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "ägg",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 1.0,
+              "conversions": [],
+              "note": "",
+              "order": 5,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 4,
+                  "name": "Kanelbullar"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Bred fyllningen över degen, rulla och skär i <scalable-number v-bind:number=\"30.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> bitar. Grädda i 250 grader.</p>",
+          "time": 8,
+          "order": 2,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 60,
+      "waiting_time": 90,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 30,
+      "file_path": "",
+      "servings_text": "bullar",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

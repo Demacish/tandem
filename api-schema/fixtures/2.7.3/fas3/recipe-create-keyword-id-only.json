@@ -1,0 +1,54 @@
+{
+  "name": "recipe-create-keyword-id-only",
+  "request": {
+    "method": "POST",
+    "path": "/api/recipe/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "Fiskgratäng från Tandem",
+      "description": "Vardagsmat från appen.",
+      "servings": 4,
+      "servings_text": "portioner",
+      "working_time": 20,
+      "waiting_time": 30,
+      "source_url": "",
+      "private": false,
+      "internal": true,
+      "keywords": [
+        {
+          "id": 4
+        }
+      ],
+      "steps": []
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "keywords": {
+        "0": {
+          "name": [
+            "This field is required."
+          ]
+        }
+      }
+    }
+  }
+}

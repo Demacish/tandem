@@ -1,0 +1,146 @@
+{
+  "name": "naring-null",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/recipe/38/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "properties": [
+        {
+          "property_type": {
+            "id": 3,
+            "name": "Tandem editor energi"
+          },
+          "property_amount": null
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 38,
+      "name": "Tandem näring",
+      "description": "Utan properties.",
+      "image": null,
+      "keywords": [],
+      "steps": [
+        {
+          "id": 47,
+          "name": "",
+          "instruction": "Blanda.",
+          "ingredients": [],
+          "instructions_markdown": "<p>Blanda.</p>",
+          "time": 0,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 0,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [
+        {
+          "id": 10,
+          "property_amount": null,
+          "property_type": {
+            "id": 3,
+            "name": "Tandem editor energi",
+            "unit": "kcal",
+            "description": null,
+            "order": 0,
+            "open_data_slug": null,
+            "fdc_id": null
+          }
+        }
+      ],
+      "food_properties": {
+        "1": {
+          "id": 1,
+          "name": "Tandem energi",
+          "description": null,
+          "unit": "kcal",
+          "order": 0,
+          "food_values": {},
+          "total_value": 0,
+          "missing_value": false
+        },
+        "2": {
+          "id": 2,
+          "name": "Tandem protein",
+          "description": null,
+          "unit": "g",
+          "order": 0,
+          "food_values": {},
+          "total_value": 0,
+          "missing_value": false
+        },
+        "3": {
+          "id": 3,
+          "name": "Tandem editor energi",
+          "description": null,
+          "unit": "kcal",
+          "order": 0,
+          "food_values": {},
+          "total_value": 0,
+          "missing_value": false
+        },
+        "4": {
+          "id": 4,
+          "name": "Tandem editor protein",
+          "description": null,
+          "unit": "g",
+          "order": 0,
+          "food_values": {},
+          "total_value": 0,
+          "missing_value": false
+        }
+      },
+      "servings": 2,
+      "file_path": "",
+      "servings_text": "",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

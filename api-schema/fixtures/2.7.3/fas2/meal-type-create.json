@@ -1,0 +1,41 @@
+{
+  "name": "meal-type-create",
+  "request": {
+    "method": "POST",
+    "path": "/api/meal-type/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "Frukost",
+      "time": "07:30",
+      "order": 2
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 3,
+      "name": "Frukost",
+      "order": 2,
+      "time": "07:30:00",
+      "color": null,
+      "created_by": 1
+    }
+  }
+}

@@ -12,6 +12,7 @@ import casa.moller.tandem.core.model.shopping.ShoppingEntryDraft
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.sync.engine.DrainResult
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
+import casa.moller.tandem.core.testing.fixtures.TandoorFixtures
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.first
 import mockwebserver3.MockResponse
@@ -300,6 +301,25 @@ class ShoppingReviewSyncTest {
         val posts = graph.server.requestsTo("POST", "/api/shopping-list-entry/bulk/").size
         assertEquals(DrainResult.DONE, graph.outbox.drain(graph.remote))
         assertEquals("not sent again", posts, graph.server.requestsTo("POST", "/api/shopping-list-entry/bulk/").size)
+        assertTrue("the role was read again", graph.server.requestsTo("GET", "/api/user-space/all_personal/").isNotEmpty())
+    }
+
+    /**
+     * Tandoor 2.7.3 (komplettering-09): a food the role may not create (a guest, or a member who
+     * became one while the row waited) is refused with 400 and the refusal on `food` as plain
+     * messages (the recorded answer). It is a refused row like a 403: FAILED `forbidden`, the role
+     * read again, the drain stopped, the account logged in.
+     */
+    @Test
+    fun aFoodTheRoleMayNotCreateIsARefusedWrite() = forEachVersion {
+        read()
+        val refusal = TandoorFixtures.exchange("fas2/shopping-list-entry-create-as-guest", "2.7.3")
+        graph.server.respond("POST", "/api/shopping-list-entry/") { jsonAnswer(refusal.status, refusal.body!!) }
+        ok(repo.add(ShoppingEntryDraft("godis")))
+        assertEquals(DrainResult.STOPPED, graph.outbox.drain(graph.remote))
+        assertNull("[$version] not logged out", graph.guard.state.value.unauthorizedAccount)
+        val rows = graph.real.outboxDao().observeAll(ACCOUNT_ID).first()
+        assertEquals(listOf(OutboxState.FAILED to "tandem.sync.forbidden"), rows.map { it.state to it.lastError })
         assertTrue("the role was read again", graph.server.requestsTo("GET", "/api/user-space/all_personal/").isNotEmpty())
     }
 

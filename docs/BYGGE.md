@@ -1149,6 +1149,7 @@ sätts av integrationen. En rad per bana.
 | las | Lås appen (plan §5.5, §10 Fas 5 "biometrisk lås"), 0.9.0 | **Av/på och tiderna:** Mer → Säkerhet → Lås appen är av som standard; att slå på kräver att telefonens skärmlås bekräftas en gång (systemets `BiometricPrompt`, `BIOMETRIC_STRONG` eller `DEVICE_CREDENTIAL`), och utan skärmlås går det inte att slå på (sidan förklarar och öppnar systemets säkerhetsinställningar). "Lås efter" Direkt / 1 min (standard) / 5 min / 15 min räknas **bara i bakgrunden** (processens ON_STOP, skärmen av inräknad) på `elapsedRealtime`; en kallstart låser alltid; att slå på låset med appen öppen låser den inte (`AppLockPolicyTest`, `DefaultAppLockTest` med falsk klocka, också en sovande telefon vars timer är sen). **Låst:** innehållet ritas inte, läses inte av TalkBack och kan inte tryckas på, låsskärmen ("Lås upp", prompten öppnas av sig själv) ligger i ett eget fönster över appens öppna ark och dialoger, Recents visar ingen bild (`setRecentsScreenshotEnabled(false)`, ingen FLAG_SECURE). **Undantagen bevisade med tester:** larmskärmen är en egen aktivitet på låsskärmen och varken den, timrarnas tjänst och mottagare, widgetarnas mottagare, rutan, klockans lyssnare eller butikspåminnelsens mottagare håller låset (`AppLockSurfacesTest`); notis, djuplänk, delning och genväg väntar och når sitt mål efter upplåsningen (`AppLockGateTest` med falsk autentiserare); widgetarna och rutan visar "Låst – öppna Tandem"/"Låst" medan låset är på (`WidgetStatesTest`, `WidgetSessionTest`); App Functions får `AppLock.unlockedWithinTimeout()`. Referensbilder och ATF för låsskärmen och sidan (telefon i båda orienteringar, surfplatta i båda, mörkt, svenska, teckenstorlek 2). Röktestet oförändrat (låset av). | ✅ klart i CI 2026-11-15 (PR 43739215393, röktest 43739215318: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)", Contract 43739215296 på 8e50683a; referensbilder från Screenshots 43734179632: bara nya bilder för låsskärmen, `app/*lock*` och `shell/lock_*`, inga befintliga ändrade); på telefonen återstår ägarens prov med fingeravtryck/pinkod och larmet medan appen är låst, se "Lås appen" |
 | integration-09 | 0.9.0 "Till hands": banorna sdk37, rss, las och funktioner samlade på main och prövade tillsammans; Fas 5 klar utom två recept sida vid sida (ägarens beslut efter köksprovet) | Alla fyra banorna på main; App Functions frågar `AppLock.unlockedWithinTimeout()` före varje läsning och skrivning och vägrar (`LOCKED`) medan appen är låst om inte "Tillåt assistenten när appen är låst" är på (`DefaultAssistantActionsTest`); inkorgens Miniflux-nyckel, val och inlägg går med kontot (`RecipeInboxSchedule` i `AccountRemovalHook`-mängden, `RecipeInboxRepositoryTest`); Android 17:s fråga om lokalt nätverk gäller också en Miniflux hemma (`LocalNetworkInterceptor` i Miniflux-klienten, `InboxProblem.LOCAL_NETWORK`); larmet, widgetarna och rutan hålls utanför låset (`AppLockSurfacesTest`, `WidgetStatesTest`); Mer visar Inkorg för recept och Assistenten sist under Inställningar, Lås appen under Säkerhet och Lokalt nätverk i Behörigheter, och gäster och demoläget följer samma regel i alla fyra. Röktestet **körs** med ett billigt nytt scenario (`Phase5TillHandsSmokeTest`: demoinkorgen → Importera → importens granskning, Mers nya sidor, låssidan utan skärmlås) och ryms med god marginal. versionCode 11, versionName 0.9.0 (klockan samma ur `app/build.gradle.kts`), CHANGELOG `[0.9.0] – 2026-11-15`, ROADMAP och RELEASE.md, torrkörning med båda APK:erna grön | ✅ klart i CI 2026-11-16 på grenen (PR 43780244324 på eb9597ff; röktest 43780414236 på c55e2d95: shard 1 "OK (15 tests)" 849 s med `Phase5TillHandsSmokeTest` (cirka 20 s), shard 2 "OK (33 tests)" 792 s, bygget 11 min, emulatorjobben 17 min 28 s och 16 min 12 s av 40; torrkörning 43780244274 på eb9597ff med `tandem-0.9.0-DRYRUN-throwaway-key.apk` och `tandem-wear-0.9.0-DRYRUN-throwaway-key.apk`; Miniflux contract 43783462380; Contract 43783460106 grön mot 2.6.13, 2.6.15 och 2.7.1; inga referensbilder ändrade). **Tandoor 2.7.3** (säkerhetsrelease 2026-11-15, nu `latest`) är röd i Contract och Tandoor-bevakningen (43783464739), utanför 0.9.0: se "Integration av Fas 5 (0.9.0)" |
 | fix-09 | Granskningen av 0.9.0: låset vid läsfel, inkorgens bilder och Miniflux-skyddet efter omstart (plan §5.4, §5.5) | **Låset:** ett läsfel i inställningsfilen (standardvärdena, låset av) följt av det sparade "på" lämnar appen **låst** och App Functions vägrar; bara att slå på låset i appen lämnar det öppet (`DefaultAppLockTest`, `AppLockPolicyTest`, `PreferencesSettingsStoreTest`). **Bilderna:** fem 404 från en främmande värd pausar inte bilderna från Tandoors origin, och varje origin har sin egen bildtakt (`ImageClientTest`). **Miniflux:** efter en 401 skickar en ny process (nytt `MinifluxGuard`) ingenting – varken bakgrundsuppdateringen, användarens uppdatering, kategorierna eller ett väntande "läst" – tills en ny nyckel anges; en `Retry-After` håller också efter omstarten (`RecipeInboxRepositoryTest`). Inga skärmar ändrade, inga referensbilder | ✅ klart i CI 2026-11-16 (PR 43791232609, Contract 43791232629 och röktest 43791232613 på fcd6eff1: shard 1 "OK (15 tests)", shard 2 "OK (33 tests)"; inga referensbilder ändrade) |
+| komplettering-09 | Tandoor 2.7.3 (säkerhetsreleasen 2026-11-15): Contract `latest` och Tandoor-bevakningen röda (ägarens beslut: egen bana) | Orsaken till 500:an från `PUT /api/recipe/{id}/shopping/` är utredd i Tandoors källkod: ett **fel** i 2.7.3 (commit a4f91e5, ingrediens-id blir en `values_list`-QuerySet som läses som Ingredient-objekt), i en väg appen aldrig anropar; `Phase2ContractTest` gör då listreceptet på appens sätt och prövar resten. Ny semantik är baslinje för 2.7.3: gästens 400 för ett nytt livsmedel (formen prövas), `filter_id` och de andra `_id`-fälten, lagerplats utan hushåll 500 (`TandoorRelease`, `expectedFor` i Fas 2 och Fas S). Klienten: `NestedCreateRefusal` gör gästens 400 till en nekad skrivning (`forbidden`, rollen läses om, utkorgen stannar; `NestedCreateRefusalTest`, `ShoppingReviewSyncTest` med 2.7.3:s inspelade svar), "Vill laga"-boken skickar `filter_id` och läser det när objektet saknas (`BookWritesContractTest` mot alla versioner, `RecipeBookRepositoryTest`, `BookMappersTest`). `api-schema/fixtures/2.7.3/` med FACTS.md, `DtoFixturesTest` mot 2.7.3, bevakningens granskade skillnader för 2.7.3 i `reviewed-changes.json`. Contract grön mot 2.6.13, 2.6.15, 2.7.1, 2.7.2 och 2.7.3. `TandoorVersionTable.TESTED` **oförändrad** (ägarens godkännande) | pågår |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 sdk37 -->
@@ -1565,8 +1566,8 @@ andra grenar), oberoende av 0.9.0. Fakta som skiljer från baslinjen i Fas 2: `P
 0 portioner), en gäst får 400 "You do not have the required permissions to create food" när en post
 skapar ett nytt livsmedel (tidigare 201), 403-texten för gästens `bulk` är ny, och receptböckerna har
 fältet `filter_id`. `TandoorVersionTable.TESTED` är oförändrad, så appen kör 2.7.3 i säkert läge
-(`UNTESTED_NEWER`) tills ägaren bestämt; ett eget arbete granskar skillnaderna och, om 500:an är
-Tandoors fel, väntar på 2.7.4.
+(`UNTESTED_NEWER`) tills ägaren bestämt. Utrett och hanterat i banan komplettering-09, se "Tandoor
+2.7.3 (komplettering-09)".
 
 **Kvar (behöver enhet):** inkorgen mot ägarens egen Miniflux med riktiga receptbloggar (banan rss);
 fingeravtryck/pinkod, ett ringande larm medan appen är låst och widgetarnas platshållare på en riktig
@@ -1574,6 +1575,68 @@ startskärm (banan las); App Functions på en telefon med Android 16+ (`adb`-kom
 Functions"; Gemini anropar ännu bara appar i Googles förhandsprogram, banan funktioner); en Tandoor
 på hemnätverket med en Android 17-telefon (banan sdk37).
 <!-- /Fas 5 integration-09 -->
+
+<!-- Fas 5 komplettering-09 -->
+## Tandoor 2.7.3 (komplettering-09; `contract-tests`, `:core:sync`, `:core:network`)
+
+Tandoor 2.7.3 (säkerhetsrelease 2026-11-15) gjorde Contract `latest` och Tandoor-bevakningen röda.
+Ägaren bestämde en egen bana. Fakta: `api-schema/fixtures/2.7.3/FACTS.md` (alla kontraktsklasser,
+Contract 43802306408); "Klart när" står i "Fas 5 – läge".
+
+**500:an är ett fel i Tandoor, ingen ny semantik.** `PUT /api/recipe/{id}/shopping/` med
+ingrediens-id svarar Djangos HTML-sida "Server Error (500)". Commit a4f91e5 ("fix shopping sub
+endpoint ingredient filter") filtrerar id:na till en `values_list`-QuerySet av heltal, och
+`RecipeShoppingEditor._add_ingredients` gör bara om en *lista* till Ingredient-objekt och läser
+sedan `x.food` på ett heltal. Avsikten (bara ingredienser i recept användaren får se) är en
+behörighetskontroll; svaret är ett ohanterat undantag. Oförändrat på Tandoors `develop`
+2026-11-16; inget ärende uppströms fanns. **Appen anropar inte vägen** (`used-endpoints.txt`):
+"Lägg på listan" gör listreceptet och en post per ingrediens (`ShoppingPayloads`). Därför väntar
+appen inte på 2.7.4. Ett ärende uppströms skulle skrivas från ägarens GitHub-konto och är inte
+skickat; ägaren avgör (texten står i banans rapport).
+
+**Kontraktstesterna.** `TandoorRelease` (contract-tests) läser serverns `version`, och
+`Phase2ContractTest.expectedFor` / `PhaseSContractTest.expectedFor` lägger till releasernas
+skillnader ovanpå `EXPECTED`:
+
+| Mängd | Gäller | Förväntan |
+|---|---|---|
+| `SINCE_2_7_3` | 2.7.3 och senare (också `latest`) | gästens post med nytt livsmedel 400, `shopping.guest.create.foodRefusedAsMessages` true (meddelandelista på `food`) |
+| `WITH_BROKEN_RECIPE_SHOPPING_PUT` | exakt 2.7.3 (`RECIPE_SHOPPING_PUT_BROKEN`) | PUT 500, inga poster, `listRecipe.viaAppRoute` true; den andra PUT:en skickas inte |
+| `NO_HOUSEHOLD_IS_A_SERVER_ERROR` | exakt 2.7.3 | lagerplats utan hushåll 500 (2.7.1: 400) |
+
+När PUT:en inte gav några poster gör Fas 2 listreceptet på appens sätt (`listRecipeTheAppsWay`),
+så att `PATCH` av portionerna och `DELETE` (som appen använder) prövas också på 2.7.3: samma
+värden som 2.7.1. De två felen gäller **exakt** 2.7.3: rättar 2.7.4 dem gäller baslinjen igen, gör
+den det inte blir körningen röd och någon tittar. `BookWritesContractTest` skickar "Vill laga"-
+boken som appen nu gör (filterobjektet och `filter_id`) mot alla versioner.
+
+**Klienten.**
+
+- `NestedCreateRefusal` (`:core:sync`, engine): från 2.7.3 kräver Tandoor gruppen `user` för ett
+  nytt livsmedel, en ny måltidstyp och en ny lista, också inbäddat. Gästen får 400 med nekandet
+  som en lista med meddelanden på fältet (`{"food": ["…"]}`), inte som fältfel inne i objektet
+  (`{"food": {"name": ["…"]}}`, som `ErrorClassifier.fieldErrors` behåller som JSON-text).
+  `OutboxSender.handleFailure` behandlar en sådan 400 på ett fält som skickades som objekt som en
+  403-nekad skrivning: FAILED `forbidden`, rollen läses om, utkorgen stannar, inloggningen står kvar.
+  Formen, aldrig den lokaliserade texten. Appen skriver aldrig som gäst; det gäller en rad som
+  väntade medan rollen ändrades.
+- Receptböcker: 2.7.3 gjorde `filter` skrivskyddad och skriver med `filter_id` (ett objekt med id
+  översätts fortfarande). `RecipeKeywordsOutboxHandler` skickar "Vill laga"-boken med båda;
+  äldre versioner bortser från det okända fältet. `RecipeBookDto.filterId` läses, och
+  `BookMappers` använder det när objektet saknas.
+- De andra nya `_id`-fälten (`default_meal_type_id`, `ai_default_provider_id`, `household_id`)
+  skriver appen inte; en lagerplats skickas med hushållet som `{id, name}`, som översätts.
+
+**Fixturer och bevakning.** `api-schema/fixtures/2.7.3/` (samma upplägg som 2.7.1, utan
+`scaling-golden.json` som är identisk), `DtoFixturesTest.everySuccessfulJsonFixtureOfTandoor273…`
+(`RecipeBookDto.filter_id` finns bara i 2.7.3:s inspelningar och undantas för de äldre). De 57
+skillnaderna mot 2.6.13 står granskade i `contract-tests/watch/reviewed-changes.json` under raden
+"2.7", så bevakningen bara säger "released but not in TandoorVersionTable.TESTED: 2.7.3".
+
+**Inte gjort (ägarens beslut):** `TandoorVersionTable.TESTED` har inte 2.7.3. Med allt grönt kan
+`TandoorVersion(2, 7, 3)` läggas till (och `CapabilitiesTest`/`CompatibilityTest`) när ägaren
+godkänner det; tills dess kör en 2.7.3-server i säkert läge (skrivningar väntar).
+<!-- /Fas 5 komplettering-09 -->
 
 <!-- Fas 5 integration-08 -->
 ## Integration av Fas 5 (0.8.0)

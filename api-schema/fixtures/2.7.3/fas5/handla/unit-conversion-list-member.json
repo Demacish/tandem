@@ -1,0 +1,59 @@
+{
+  "name": "unit-conversion-list-member",
+  "request": {
+    "method": "GET",
+    "path": "/api/unit-conversion/?page_size=1",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000002",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "count": 3,
+      "next": "https://tandoor.example.com/api/unit-conversion/?page=2&page_size=1",
+      "previous": null,
+      "timestamp": "2000-01-15T00:00:00.000000+00:00",
+      "results": [
+        {
+          "id": 1,
+          "name": "1 dl  = 100 ml",
+          "base_amount": 1.0,
+          "base_unit": {
+            "id": 5,
+            "name": "dl",
+            "plural_name": "dl",
+            "description": null,
+            "base_unit": null,
+            "open_data_slug": null
+          },
+          "converted_amount": 100.0,
+          "converted_unit": {
+            "id": 3,
+            "name": "ml",
+            "plural_name": null,
+            "description": null,
+            "base_unit": "ml",
+            "open_data_slug": null
+          },
+          "food": null,
+          "open_data_slug": null
+        }
+      ]
+    }
+  }
+}

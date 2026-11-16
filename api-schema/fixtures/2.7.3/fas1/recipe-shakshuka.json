@@ -1,0 +1,474 @@
+{
+  "name": "recipe-shakshuka",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/6/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 6,
+      "name": "Shakshuka",
+      "description": "Eggs poached in a spiced tomato sauce.",
+      "image": null,
+      "keywords": [
+        {
+          "id": 3,
+          "name": "Vegetariskt",
+          "label": "Vegetariskt",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Vegetariskt"
+        },
+        {
+          "id": 7,
+          "name": "Breakfast",
+          "label": "Breakfast",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Breakfast"
+        }
+      ],
+      "steps": [
+        {
+          "id": 11,
+          "name": "Sauce",
+          "instruction": "Fry {{ ingredients[0] }} and {{ ingredients[1] }}, then add {{ ingredients[2] }} and {{ ingredients[3].amount }} {{ ingredients[3].unit }} {{ ingredients[3].food }}.",
+          "ingredients": [
+            {
+              "id": 40,
+              "food": {
+                "id": 11,
+                "name": "onion",
+                "plural_name": "onions",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "onion",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 1.0,
+              "conversions": [],
+              "note": "chopped",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 6,
+                  "name": "Shakshuka"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 41,
+              "food": {
+                "id": 28,
+                "name": "garlic",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "garlic",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 11,
+                "name": "clove",
+                "plural_name": "cloves",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 2.0,
+              "conversions": [
+                {
+                  "food": "garlic",
+                  "unit": "clove",
+                  "amount": 2.0
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 6,
+                  "name": "Shakshuka"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 42,
+              "food": {
+                "id": 29,
+                "name": "crushed tomatoes",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "crushed tomatoes",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 10,
+                "name": "cup",
+                "plural_name": "cups",
+                "description": null,
+                "base_unit": "us_cup",
+                "open_data_slug": null
+              },
+              "amount": 1.5,
+              "conversions": [
+                {
+                  "food": "crushed tomatoes",
+                  "unit": "cup",
+                  "amount": 1.5
+                },
+                {
+                  "food": "crushed tomatoes",
+                  "unit": "l",
+                  "amount": 0.3548825930088129
+                },
+                {
+                  "food": "crushed tomatoes",
+                  "unit": "ml",
+                  "amount": 354.88259300881293
+                },
+                {
+                  "food": "crushed tomatoes",
+                  "unit": "msk",
+                  "amount": 24.0
+                },
+                {
+                  "food": "crushed tomatoes",
+                  "unit": "tsk",
+                  "amount": 71.99999999999999
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 6,
+                  "name": "Shakshuka"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 43,
+              "food": {
+                "id": 30,
+                "name": "water",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "water",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 10,
+                "name": "cup",
+                "plural_name": "cups",
+                "description": null,
+                "base_unit": "us_cup",
+                "open_data_slug": null
+              },
+              "amount": 0.6667,
+              "conversions": [
+                {
+                  "food": "water",
+                  "unit": "cup",
+                  "amount": 0.6666666666666666
+                },
+                {
+                  "food": "water",
+                  "unit": "l",
+                  "amount": 0.15772559689280571
+                },
+                {
+                  "food": "water",
+                  "unit": "ml",
+                  "amount": 157.72559689280575
+                },
+                {
+                  "food": "water",
+                  "unit": "msk",
+                  "amount": 10.666666666666666
+                },
+                {
+                  "food": "water",
+                  "unit": "tsk",
+                  "amount": 31.999999999999993
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 6,
+                  "name": "Shakshuka"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 44,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 12,
+                "name": "pinch",
+                "plural_name": "pinches",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "salt",
+                  "unit": "pinch",
+                  "amount": 1.0
+                }
+              ],
+              "note": "",
+              "order": 4,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 6,
+                  "name": "Shakshuka"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Fry <scalable-number v-bind:number=\"1.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"onion\" plural=\"onions\" v-bind:amount=\"1.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> and <scalable-number v-bind:number=\"2.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> cloves garlic, then add <scalable-number v-bind:number=\"1.5\" v-bind:factor=\"ingredient_factor\"></scalable-number> cups crushed tomatoes and <scalable-number v-bind:number=\"0.6666666666666666\" v-bind:factor=\"ingredient_factor\"></scalable-number> cups water.</p>",
+          "time": 15,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 12,
+          "name": "Eggs",
+          "instruction": "Make {{ scale(4) }} wells and crack {{ ingredients[0] }} into them.",
+          "ingredients": [
+            {
+              "id": 45,
+              "food": {
+                "id": 10,
+                "name": "egg",
+                "plural_name": "eggs",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "egg",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 4.0,
+              "conversions": [],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 6,
+                  "name": "Shakshuka"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Make <scalable-number v-bind:number=\"4.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> wells and crack <scalable-number v-bind:number=\"4.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"egg\" plural=\"eggs\" v-bind:amount=\"4.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> into them.</p>",
+          "time": 8,
+          "order": 1,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 25,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": "https://example.com/recipes/shakshuka",
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 2,
+      "file_path": "",
+      "servings_text": "servings",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

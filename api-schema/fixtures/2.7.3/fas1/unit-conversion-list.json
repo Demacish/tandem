@@ -1,0 +1,108 @@
+{
+  "name": "unit-conversion-list",
+  "request": {
+    "method": "GET",
+    "path": "/api/unit-conversion/?page_size=100",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "count": 2,
+      "next": null,
+      "previous": null,
+      "timestamp": "2000-01-15T00:00:00.000000+00:00",
+      "results": [
+        {
+          "id": 1,
+          "name": "1 dl  = 100 ml",
+          "base_amount": 1.0,
+          "base_unit": {
+            "id": 5,
+            "name": "dl",
+            "plural_name": "dl",
+            "description": null,
+            "base_unit": null,
+            "open_data_slug": null
+          },
+          "converted_amount": 100.0,
+          "converted_unit": {
+            "id": 3,
+            "name": "ml",
+            "plural_name": null,
+            "description": null,
+            "base_unit": "ml",
+            "open_data_slug": null
+          },
+          "food": null,
+          "open_data_slug": null
+        },
+        {
+          "id": 2,
+          "name": "1 dl  vetemjöl = 60 g",
+          "base_amount": 1.0,
+          "base_unit": {
+            "id": 5,
+            "name": "dl",
+            "plural_name": "dl",
+            "description": null,
+            "base_unit": null,
+            "open_data_slug": null
+          },
+          "converted_amount": 60.0,
+          "converted_unit": {
+            "id": 1,
+            "name": "g",
+            "plural_name": null,
+            "description": null,
+            "base_unit": "g",
+            "open_data_slug": null
+          },
+          "food": {
+            "id": 12,
+            "name": "vetemjöl",
+            "plural_name": null,
+            "description": "",
+            "recipe": null,
+            "url": "",
+            "properties": [],
+            "properties_food_amount": 100.0,
+            "properties_food_unit": null,
+            "fdc_id": null,
+            "food_onhand": false,
+            "supermarket_category": null,
+            "parent": null,
+            "numchild": 0,
+            "inherit_fields": [],
+            "full_name": "vetemjöl",
+            "ignore_shopping": false,
+            "substitute": [],
+            "substitute_siblings": false,
+            "substitute_children": false,
+            "substitute_onhand": false,
+            "child_inherit_fields": [],
+            "open_data_slug": null,
+            "shopping_lists": []
+          },
+          "open_data_slug": null
+        }
+      ]
+    }
+  }
+}

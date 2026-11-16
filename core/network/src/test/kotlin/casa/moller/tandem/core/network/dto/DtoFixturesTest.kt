@@ -168,6 +168,9 @@ class DtoFixturesTest {
     @Test
     fun everySuccessfulJsonFixtureOfTandoor271DecodesWithItsDto() = checkFixtures("2.7.1", notModelled, absent = since273)
 
+    @Test
+    fun everySuccessfulJsonFixtureOfTandoor273DecodesWithItsDto() = checkFixtures("2.7.3", notModelled)
+
     private fun checkFixtures(version: String, notModelled: Map<String, String>, absent: Set<String> = emptySet()) {
         val names = Fixture.allNames(version)
         assertTrue("Fixtures not found: $names", names.size > 100)

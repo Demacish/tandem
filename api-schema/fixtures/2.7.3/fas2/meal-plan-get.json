@@ -1,0 +1,48 @@
+{
+  "name": "meal-plan-get",
+  "request": {
+    "method": "GET",
+    "path": "/api/meal-plan/4/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 4,
+      "title": "Ny titel",
+      "recipe": null,
+      "servings": 3.0,
+      "note": "",
+      "note_markdown": "",
+      "from_date": "2000-01-19T18:00:00+01:00",
+      "to_date": "2000-01-19T18:00:00+01:00",
+      "meal_type": {
+        "id": 3,
+        "name": "Frukost",
+        "order": 2,
+        "time": "07:30:00",
+        "color": null,
+        "created_by": 1
+      },
+      "created_by": 1,
+      "meal_type_name": "Frukost",
+      "shopping": false
+    }
+  }
+}

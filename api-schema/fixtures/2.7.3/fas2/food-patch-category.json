@@ -1,0 +1,66 @@
+{
+  "name": "food-patch-category",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/food/42/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "supermarket_category": {
+        "id": 2,
+        "name": "Mejeri"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 42,
+      "name": "grädde",
+      "plural_name": null,
+      "description": "",
+      "shopping": "False",
+      "recipe": null,
+      "url": "",
+      "properties": [],
+      "properties_food_amount": 100.0,
+      "properties_food_unit": null,
+      "fdc_id": null,
+      "food_onhand": false,
+      "supermarket_category": {
+        "id": 2,
+        "name": "Mejeri",
+        "description": "",
+        "open_data_slug": null
+      },
+      "parent": null,
+      "numchild": 0,
+      "inherit_fields": [],
+      "full_name": "grädde",
+      "ignore_shopping": false,
+      "substitute": [],
+      "substitute_siblings": false,
+      "substitute_children": false,
+      "substitute_onhand": false,
+      "child_inherit_fields": [],
+      "open_data_slug": null,
+      "shopping_lists": []
+    }
+  }
+}

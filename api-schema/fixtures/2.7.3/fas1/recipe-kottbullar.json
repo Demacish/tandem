@@ -1,0 +1,818 @@
+{
+  "name": "recipe-kottbullar",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/5/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 5,
+      "name": "Köttbullar med potatismos",
+      "description": "",
+      "image": null,
+      "keywords": [
+        {
+          "id": 1,
+          "name": "Huvudrätt",
+          "label": "Huvudrätt",
+          "description": "",
+          "parent": null,
+          "numchild": 1,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Huvudrätt"
+        },
+        {
+          "id": 5,
+          "name": "Husmanskost",
+          "label": "Husmanskost",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Husmanskost"
+        }
+      ],
+      "steps": [
+        {
+          "id": 8,
+          "name": "Köttbullar",
+          "instruction": "Blanda {{ ingredients[1] }} med {{ ingredients[2] }}. Rulla cirka {{ scale(24) }} köttbullar.",
+          "ingredients": [
+            {
+              "id": 29,
+              "food": {
+                "id": 25,
+                "name": "köttfärs",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "köttfärs",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 500.0,
+              "conversions": [
+                {
+                  "food": "köttfärs",
+                  "unit": "g",
+                  "amount": 500.0
+                },
+                {
+                  "food": "köttfärs",
+                  "unit": "kg",
+                  "amount": 0.5
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 30,
+              "food": {
+                "id": 26,
+                "name": "ströbröd",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "ströbröd",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 0.5,
+              "conversions": [
+                {
+                  "food": "ströbröd",
+                  "unit": "dl",
+                  "amount": 0.5
+                },
+                {
+                  "food": "ströbröd",
+                  "unit": "ml",
+                  "amount": 50.0
+                },
+                {
+                  "food": "ströbröd",
+                  "unit": "cup",
+                  "amount": 0.2113375
+                },
+                {
+                  "food": "ströbröd",
+                  "unit": "l",
+                  "amount": 0.05
+                },
+                {
+                  "food": "ströbröd",
+                  "unit": "msk",
+                  "amount": 3.3814
+                },
+                {
+                  "food": "ströbröd",
+                  "unit": "tsk",
+                  "amount": 10.1442
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 31,
+              "food": {
+                "id": 19,
+                "name": "mjölk",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "mjölk",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "mjölk",
+                  "unit": "dl",
+                  "amount": 1.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "ml",
+                  "amount": 100.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "cup",
+                  "amount": 0.422675
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "l",
+                  "amount": 0.1
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "msk",
+                  "amount": 6.7628
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "tsk",
+                  "amount": 20.2884
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 32,
+              "food": {
+                "id": 2,
+                "name": "gul lök",
+                "plural_name": "gula lökar",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "gul lök",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 1.0,
+              "conversions": [],
+              "note": "finriven",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 33,
+              "food": {
+                "id": 18,
+                "name": "ägg",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "ägg",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 1.0,
+              "conversions": [],
+              "note": "",
+              "order": 4,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 34,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "",
+              "order": 5,
+              "is_header": false,
+              "no_amount": true,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Blanda <scalable-number v-bind:number=\"0.5\" v-bind:factor=\"ingredient_factor\"></scalable-number> dl ströbröd med <scalable-number v-bind:number=\"1.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> dl mjölk. Rulla cirka <scalable-number v-bind:number=\"24.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> köttbullar.</p>",
+          "time": 25,
+          "order": 0,
+          "show_as_header": true,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 9,
+          "name": "Potatismos",
+          "instruction": "Koka {{ ingredients[0] }} mjuk och mosa med {{ ingredients[1] }} och smör.",
+          "ingredients": [
+            {
+              "id": 35,
+              "food": {
+                "id": 4,
+                "name": "potatis",
+                "plural_name": "potatisar",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "potatis",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 2,
+                "name": "kg",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "kg",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "potatis",
+                  "unit": "kg",
+                  "amount": 1.0
+                },
+                {
+                  "food": "potatis",
+                  "unit": "g",
+                  "amount": 1000.0
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 36,
+              "food": {
+                "id": 19,
+                "name": "mjölk",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "mjölk",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 2.0,
+              "conversions": [
+                {
+                  "food": "mjölk",
+                  "unit": "dl",
+                  "amount": 2.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "ml",
+                  "amount": 200.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "cup",
+                  "amount": 0.84535
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "l",
+                  "amount": 0.2
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "msk",
+                  "amount": 13.5256
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "tsk",
+                  "amount": 40.5768
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 37,
+              "food": {
+                "id": 20,
+                "name": "smör",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "smör",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 50.0,
+              "conversions": [
+                {
+                  "food": "smör",
+                  "unit": "g",
+                  "amount": 50.0
+                },
+                {
+                  "food": "smör",
+                  "unit": "kg",
+                  "amount": 0.05
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 38,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "salt",
+                  "unit": "tsk",
+                  "amount": 1.0
+                },
+                {
+                  "food": "salt",
+                  "unit": "cup",
+                  "amount": 0.020833333333333332
+                },
+                {
+                  "food": "salt",
+                  "unit": "l",
+                  "amount": 0.004928924902900179
+                },
+                {
+                  "food": "salt",
+                  "unit": "ml",
+                  "amount": 4.92892490290018
+                },
+                {
+                  "food": "salt",
+                  "unit": "msk",
+                  "amount": 0.3333333333333333
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Koka <scalable-number v-bind:number=\"1.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> kg <plural-name singular=\"potatis\" plural=\"potatisar\" v-bind:amount=\"1.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> mjuk och mosa med <scalable-number v-bind:number=\"2.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> dl mjölk och smör.</p>",
+          "time": 20,
+          "order": 1,
+          "show_as_header": true,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 10,
+          "name": "Servering",
+          "instruction": "Servera med {{ ingredients[0].food }}.",
+          "ingredients": [
+            {
+              "id": 39,
+              "food": {
+                "id": 27,
+                "name": "lingonsylt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "lingonsylt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "till servering",
+              "order": 0,
+              "is_header": false,
+              "no_amount": true,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 5,
+                  "name": "Köttbullar med potatismos"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Servera med lingonsylt.</p>",
+          "time": 0,
+          "order": 2,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 45,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 4,
+      "file_path": "",
+      "servings_text": "portioner",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

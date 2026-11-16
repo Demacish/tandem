@@ -1,0 +1,42 @@
+{
+  "name": "meal-type-create",
+  "request": {
+    "method": "POST",
+    "path": "/api/meal-type/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "Tandem-autoplan middag",
+      "order": 99,
+      "time": "18:00:00",
+      "color": "#003E7E"
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 4,
+      "name": "Tandem-autoplan middag",
+      "order": 99,
+      "time": "18:00:00",
+      "color": "#003E7E",
+      "created_by": 1
+    }
+  }
+}

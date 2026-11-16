@@ -1,0 +1,38 @@
+{
+  "name": "recipe-patch-keywords-as-guest",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/recipe/14/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000003",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "keywords": [
+        {
+          "name": "vill-laga"
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  }
+}

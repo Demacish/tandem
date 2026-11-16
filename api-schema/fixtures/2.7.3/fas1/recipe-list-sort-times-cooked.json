@@ -1,0 +1,27 @@
+{
+  "name": "recipe-list-sort-times-cooked",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/?sort_order=-times_cooked&page_size=100",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 500,
+    "headers": {
+      "content-language": "en",
+      "content-type": "text/html; charset=utf-8",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": false,
+    "bodyText": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n"
+  }
+}

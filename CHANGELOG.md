@@ -6,6 +6,17 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+**Tandoor 2.7.3**
+
+- Tandem klarar ändringarna i Tandoors säkerhetsrelease 2.7.3: "Vill laga"-boken skickar sitt
+  sparade filter på det nya sättet (och fungerar som förut med äldre versioner), och om Tandoor
+  nekar ett nytt livsmedel för att kontot har blivit gäst står ändringen som nekad, rollen läses om
+  och resten av ändringarna väntar, i stället för att skickas en efter en.
+- Felet i Tandoor 2.7.3 där ett recept inte går att lägga på inköpslistan från Tandoors API berör
+  inte Tandem, som lägger på receptets varor på sitt eget sätt.
+- Tandem räknar fortfarande 2.7.3 som otestad (skrivningar väntar i säkert läge) tills versionen
+  har godkänts för appen.
+
 ## [0.9.0] – 2026-11-15
 
 Fas 5, tredje och sista delen: Till hands. Receptinkorgen samlar nya recept från din egen
