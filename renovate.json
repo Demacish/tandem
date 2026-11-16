@@ -70,6 +70,14 @@
       "groupName": "Build toolchain (AGP, Kotlin, KSP, Hilt)"
     },
     {
+      "description": "KSP: never 2.3.13. With several KSP tasks at once in one Gradle daemon (org.gradle.parallel) it loses library symbols and Hilt modules silently drop out (google/ksp#3286, fixed in 2.3.14).",
+      "matchPackageNames": [
+        "com.google.devtools.ksp",
+        "com.google.devtools.ksp:**"
+      ],
+      "allowedVersions": "!/^2\\.3\\.13$/"
+    },
+    {
       "description": "Test libraries.",
       "matchPackageNames": [
         "junit:junit",

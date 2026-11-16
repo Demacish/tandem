@@ -23,10 +23,26 @@ kan installeras bredvid release-bygget.
 
 - Alla beroenden och plugins: `gradle/libs.versions.toml` (verifierade 2026-10-09).
 - Gradle 9.7.1 via wrappern (med `distributionSha256Sum`). Kör alltid `./gradlew`.
-- AGP 9.4.1 med **inbyggd Kotlin** (Kotlin 2.4.21). Pluginen `org.jetbrains.kotlin.android`
+- AGP 9.5.0 med **inbyggd Kotlin** (Kotlin 2.4.21). Pluginen `org.jetbrains.kotlin.android`
   används inte. Rotens `build.gradle.kts` deklarerar alla plugins med `apply false`, vilket
-  lyfter AGP:s inbyggda Kotlin från 2.2.10 till katalogens version – ta inte bort raderna.
-  CI kontrollerar versionen med `buildEnvironment`.
+  lyfter AGP:s inbyggda Kotlin från 2.2.10 (och KSP från 2.2.10-2.0.2) till katalogens version –
+  ta inte bort raderna. CI kontrollerar versionen med `buildEnvironment`. KSP ≥ 2.3.6 och
+  Hilt ≥ 2.59.2 krävs av AGP 9; Hilts kotlin-metadata-jvm måste kunna läsa Kotlin 2.4.
+- KSP stannar på 2.3.12 (Renovate #6 föreslog 2.3.13 tillsammans med AGP 9.5.0): 2.3.13 tappar
+  biblioteksymboler när flera KSP-uppgifter kör samtidigt i samma daemon (`org.gradle.parallel`),
+  och då faller hela Hilt-moduler bort utan fel i KSP-steget (`[Dagger/MissingBinding]` i
+  `hiltJavaCompile…`, google/ksp#3286). Rättat i 2.3.14 (2026-11-13); `renovate.json` hoppar över
+  2.3.13, så Renovate föreslår 2.3.14 när den är 14 dagar gammal.
+- AGP 9.5 registrerar `generate<Variant>ComposePreviewRunfiles` för varje variant med Compose
+  (underlag för Compose-förhandsvisningar). Uppgiften går bara att skapa för en variant som har
+  enhetstester, och med AGP 9:s standard (`android.onlyEnableUnitTestForTheTestedBuildType`) har
+  bara debug det, inte release eller minified. Ingen flagga stänger av den (bara
+  `buildFeatures.compose`), men den skapas först när något ber om den. Ett beroende på
+  `tasks.matching { … }` skapar alla uppgifter i projektet och stoppade därför `ciTest`
+  ("Unit tests are disabled for this variant"); `AndroidRoborazziConventionPlugin` väljer
+  Roborazzi-uppgifterna med `tasks.named { … }`, som bara skapar de uppgifter vars namn matchar.
+  Använd aldrig `tasks.matching { … }` som beroende i build-logic, och slå inte på enhetstester
+  för release för att komma runt felet.
 - Sätt inte `android.builtInKotlin`, `android.newDsl`, `android.disallowKotlinSourceSets` eller
   `android.enableJetifier` i `gradle.properties`.
 - Bytekod: Java 17. CI kör på JDK 21 (krävs av Robolectric för SDK 36+).

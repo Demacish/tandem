@@ -77,13 +77,16 @@ class AndroidRoborazziConventionPlugin : Plugin<Project> {
                 }
                 into(goldens)
                 // Always from a fresh recording (run it with -Ptandem.screenshots.verify=false).
-                dependsOn(tasks.matching { it.name == "recordRoborazziDebug" || it.name == "recordRoborazziSideloadDebug" })
+                dependsOn(tasks.named { it == "recordRoborazziDebug" || it == "recordRoborazziSideloadDebug" })
             }
 
             // ciTest (registered later by the library plugin or app/build.gradle.kts) records or
             // verifies the variant whose unit tests it runs: Debug, or SideloadDebug in :app.
+            // tasks.named { }, not tasks.matching { }: resolving a matching() collection creates EVERY
+            // task of the project, and AGP 9.5's generate<Variant>ComposePreviewRunfiles fails to be
+            // created for a variant without unit tests (release, minified; docs/BYGGE.md "Versioner").
             val mode = if (verify) "verify" else "record"
-            val roborazziTasks = tasks.matching { it.name == "${mode}RoborazziDebug" || it.name == "${mode}RoborazziSideloadDebug" }
+            val roborazziTasks = tasks.named { it == "${mode}RoborazziDebug" || it == "${mode}RoborazziSideloadDebug" }
             tasks.matching { it.name == "ciTest" }.configureEach { dependsOn(roborazziTasks) }
         }
     }

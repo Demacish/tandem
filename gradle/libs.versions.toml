@@ -1,7 +1,7 @@
 # Tandem – Gradle version catalog.
 # All versions verified against maven-metadata.xml on Google Maven / Maven Central /
 # Gradle Plugin Portal on 2026-10-09. Pre-releases are marked "PRE-RELEASE" with the reason.
-# Gradle wrapper: 9.7.1 (AGP 9.4 needs >= 9.6.0; KGP 2.4.20+ is fully tested up to 9.7.x).
+# Gradle wrapper: 9.7.1 (AGP 9.5 needs >= 9.6.0; KGP 2.4.20+ is fully tested up to 9.7.x).
 # CI JDK: Temurin 21 (AGP needs >= 17; Robolectric needs 21 for SDK 36+).
 
 [versions]
@@ -20,10 +20,12 @@ compileSdk = "37"
 
 # --- Build toolchain ---
 agp = "9.5.0"
-# AGP 9.4.1 only has a runtime dependency on KGP 2.2.10 / KSP 2.2.10-2.0.2. Declaring the
+# AGP 9.5.0 only has a runtime dependency on KGP 2.2.10 / KSP 2.2.10-2.0.2. Declaring the
 # plugins below (root build.gradle.kts, `apply false`) upgrades the shared classpath.
 kotlin = "2.4.21"
-ksp = "2.3.13"            # KSP2, version decoupled from Kotlin since 2.3.0; AGP 9 needs >= 2.3.6
+# NOT 2.3.13: with several KSP tasks at once in one daemon (org.gradle.parallel) it loses library
+# symbols, and Hilt modules silently drop out (google/ksp#3286; renovate.json skips it). Fixed in 2.3.14.
+ksp = "2.3.12"            # KSP2, version decoupled from Kotlin since 2.3.0; AGP 9 needs >= 2.3.6
 
 # --- DI ---
 hilt = "2.60.1"           # AGP 9 requires >= 2.59.2; bundles kotlin-metadata-jvm 2.3.21 (reads up to 2.4.x)
