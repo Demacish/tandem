@@ -42,6 +42,13 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
         .resubscribeOnFailure(fallback = AppSettings.Default)
         .distinctUntilChanged()
 
+    // Fas 5 (fix-09): the same without the defaults in between, so the app lock never sees "off"
+    // because the file could not be read for a moment.
+    override val storedSettings: Flow<AppSettings> = dataStore.data
+        .map { it.toAppSettings() }
+        .resubscribeOnFailureWithoutFallback()
+        .distinctUntilChanged()
+
     override suspend fun update(transform: (AppSettings) -> AppSettings) {
         dataStore.edit { preferences -> preferences.write(transform(preferences.toAppSettings())) }
     }

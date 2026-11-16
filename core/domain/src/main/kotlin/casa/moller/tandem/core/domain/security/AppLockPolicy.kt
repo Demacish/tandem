@@ -38,8 +38,11 @@ data class AppLockState(
  *   visible ([toBackground] → [tick] → [toForeground]); an app in front (cook mode, the kitchen
  *   display with the screen kept on) never locks. "Direkt" locks as soon as the app is in the
  *   background.
- * - **Settings:** turning the lock on while the app is open does not lock it (the user has just
- *   confirmed the screen lock); turning it off unlocks.
+ * - **Settings:** turning the lock on in the app does not lock it (the user has just confirmed the
+ *   screen lock); turning it off unlocks. The lock turning on any other way (the settings file
+ *   readable again after a read error, a restored backup) locks: only the caller knows that the
+ *   user switched it on here, so it says so ([withSettings]' `enabledInApp`), the policy never
+ *   guesses it from an off-to-on change (fix-09).
  * - **Surfaces:** [blocks] and [showsContent] say what each way into the app does while the lock
  *   is on; the alarm, timer notifications, background work, reminders and the watch never wait for it.
  */
@@ -47,8 +50,11 @@ object AppLockPolicy {
     /** A new process: locked until the settings say the lock is off or the user unlocks. */
     fun coldStart(): AppLockState = AppLockState()
 
-    /** The stored setting was read or changed. */
-    fun withSettings(state: AppLockState, settings: AppLockSettings): AppLockState {
+    /**
+     * The stored setting was read or changed. [enabledInApp] is true only when this change is the
+     * user switching the lock on in this process (Mer → Lås appen, after confirming the screen lock).
+     */
+    fun withSettings(state: AppLockState, settings: AppLockSettings, enabledInApp: Boolean = false): AppLockState {
         val previous = state.settings
         return when {
             !settings.enabled -> state.copy(settings = settings, locked = false)
@@ -56,8 +62,9 @@ object AppLockPolicy {
             // The first read of this process keeps the cold start's lock.
             previous == null -> state.copy(settings = settings)
 
-            // Turned on in the app: the user just confirmed the screen lock.
-            !previous.enabled -> state.copy(settings = settings, locked = false)
+            // Turned on: unlocked only when the user just did it in the app (and confirmed the
+            // screen lock); turned on any other way it locks, so nothing opens without the screen lock.
+            !previous.enabled -> state.copy(settings = settings, locked = !enabledInApp)
 
             else -> state.copy(settings = settings)
         }

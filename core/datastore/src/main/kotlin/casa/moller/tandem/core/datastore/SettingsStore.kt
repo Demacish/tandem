@@ -13,6 +13,15 @@ interface SettingsStore {
     val settings: Flow<AppSettings>
 
     /**
+     * Fas 5 (fix-09, plan §5.5): only settings actually read from the file. While reading fails it
+     * emits nothing and keeps trying, where [settings] emits [AppSettings.Default] for the moment;
+     * for what must not fail open on a read error (the app lock). A corrupt file is still reset to
+     * the defaults and reported, as for [settings].
+     */
+    val storedSettings: Flow<AppSettings>
+        get() = settings
+
+    /**
      * Atomically replaces the settings with the result of [transform].
      *
      * @throws java.io.IOException if the settings could not be written.

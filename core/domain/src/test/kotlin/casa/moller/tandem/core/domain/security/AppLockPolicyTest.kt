@@ -101,11 +101,20 @@ class AppLockPolicyTest {
     @Test
     fun turningTheLockOnInTheAppDoesNotLockIt() {
         val off = AppLockPolicy.toForeground(AppLockPolicy.withSettings(AppLockPolicy.coldStart(), AppLockSettings()), now)
-        val on = AppLockPolicy.withSettings(off, on())
+        val on = AppLockPolicy.withSettings(off, on(), enabledInApp = true)
         assertEquals(AppLockStatus.UNLOCKED, on.status)
         // ...but leaving the app afterwards does.
         val background = AppLockPolicy.toBackground(on, now)
         assertEquals(AppLockStatus.LOCKED, AppLockPolicy.toForeground(background, now + 61_000).status)
+    }
+
+    @Test
+    fun theLockTurningOnAnyOtherWayLocks() {
+        // fix-09: a read error gave the defaults (off), the next read gives the stored "on".
+        val fallback = AppLockPolicy.toForeground(AppLockPolicy.withSettings(AppLockPolicy.coldStart(), AppLockSettings()), now)
+        val stored = AppLockPolicy.withSettings(fallback, on())
+        assertEquals(AppLockStatus.LOCKED, stored.status)
+        assertTrue(AppLockPolicy.blocks(AppSurface.APP_FUNCTION, stored.status))
     }
 
     @Test

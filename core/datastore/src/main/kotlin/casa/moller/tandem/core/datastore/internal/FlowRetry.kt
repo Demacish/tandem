@@ -27,5 +27,16 @@ internal fun <T> Flow<T>.resubscribeOnFailure(fallback: T, onFailure: () -> Unit
     true
 }
 
+/**
+ * Fas 5 (fix-09): like [resubscribeOnFailure] but emits nothing while reading fails, for a
+ * collector that must wait for the real value rather than act on a default.
+ */
+internal fun <T> Flow<T>.resubscribeOnFailureWithoutFallback(onFailure: () -> Unit = {}): Flow<T> = retryWhen { cause, attempt ->
+    if (cause is CancellationException) return@retryWhen false
+    onFailure()
+    delay(retryDelayMillis(attempt))
+    true
+}
+
 internal fun retryDelayMillis(attempt: Long): Long = (FIRST_RETRY_DELAY_MILLIS shl attempt.coerceIn(0L, MAX_BACKOFF_SHIFT.toLong()).toInt())
     .coerceAtMost(MAX_RETRY_DELAY_MILLIS)

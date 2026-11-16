@@ -138,6 +138,21 @@ class PreferencesSettingsStoreTest {
         }
     }
 
+    @Test
+    fun theStoredSettingsSkipTheDefaultsOnAReadError() = runTest {
+        // fix-09: the app lock follows storedSettings, so a read error never reads as "lock off".
+        val real = PreferenceDataStoreFactory.create(scope = scopes.newScope(), produceFile = { file })
+        real.edit { it[PreferencesSettingsStore.Keys.APP_LOCK_ENABLED] = true }
+        val store = PreferencesSettingsStore(FailingOnceDataStore(real))
+
+        store.storedSettings.test {
+            assertEquals(AppLockSettings(enabled = true), awaitItem().appLock)
+            store.update { it.copy(appLock = AppLockSettings(enabled = false)) }
+            assertEquals(AppLockSettings(enabled = false), awaitItem().appLock)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     /** The first collection of [data] fails with an I/O error (not corruption), later ones work. */
     private class FailingOnceDataStore(private val real: DataStore<Preferences>) : DataStore<Preferences> {
         @Volatile

@@ -43,6 +43,10 @@ import kotlinx.coroutines.launch
  * already locked when it comes back; a phone asleep runs that timer late, so ON_START and
  * [unlockedWithinTimeout] look at the clock again.
  *
+ * The setting comes from [SettingsStore.storedSettings], never from the defaults a read error
+ * gives for a moment, and only [setEnabled] in this process can turn the lock on without locking
+ * (fix-09): a lock that turns on any other way locks.
+ *
  * Nothing else in the process asks it: timers, the alarm, WorkManager, the reminders and the
  * watch keep working while the app is locked.
  */
@@ -56,9 +60,13 @@ class DefaultAppLock @Inject internal constructor(
     private val statusFlow = MutableStateFlow(AppLockStatus.UNKNOWN)
     private val lockedFlow = MutableStateFlow(true)
     private val started = AtomicBoolean(false)
+
+    /** fix-09: [setEnabled] (true) is under way in this process, so the "on" it writes does not lock. */
+    private val enabledInApp = AtomicBoolean(false)
+
     private var timeoutJob: Job? = null
 
-    override val settings: Flow<AppLockSettings> = settingsStore.settings.map { it.appLock }.distinctUntilChanged()
+    override val settings: Flow<AppLockSettings> = settingsStore.storedSettings.map { it.appLock }.distinctUntilChanged()
 
     override val status: StateFlow<AppLockStatus> = statusFlow.asStateFlow()
 
@@ -83,7 +91,12 @@ class DefaultAppLock @Inject internal constructor(
 
     /** The stored setting reaches the policy (tests call it instead of [start]). */
     internal fun followSettings() {
-        scope.launch { settings.collect { stored -> change { AppLockPolicy.withSettings(it, stored) } } }
+        scope.launch {
+            settings.collect { stored ->
+                val inApp = stored.enabled && enabledInApp.getAndSet(false)
+                change { AppLockPolicy.withSettings(it, stored, enabledInApp = inApp) }
+            }
+        }
     }
 
     /** A screen of the app is visible again (the process lifecycle's ON_START). */
@@ -113,7 +126,14 @@ class DefaultAppLock @Inject internal constructor(
         return !AppLockPolicy.blocks(AppSurface.APP_FUNCTION, statusFlow.value)
     }
 
-    override suspend fun setEnabled(enabled: Boolean): Outcome<Unit> = write { it.copy(appLock = it.appLock.copy(enabled = enabled)) }
+    override suspend fun setEnabled(enabled: Boolean): Outcome<Unit> {
+        // Only a real off-to-on change is marked: one that never reaches the collector must not
+        // leave the mark for a later "on" that comes from somewhere else.
+        enabledInApp.set(enabled && state.value.settings?.enabled == false)
+        val outcome = write { it.copy(appLock = it.appLock.copy(enabled = enabled)) }
+        if (outcome is Outcome.Failure) enabledInApp.set(false)
+        return outcome
+    }
 
     override suspend fun setTimeout(timeout: AppLockTimeout): Outcome<Unit> =
         write { it.copy(appLock = it.appLock.copy(timeout = timeout)) }
