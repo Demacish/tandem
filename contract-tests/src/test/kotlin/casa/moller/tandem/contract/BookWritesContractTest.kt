@@ -28,7 +28,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
  *   DELETE answers 204 and then 404;
  * - "Vill laga": a member PATCHes the whole keyword list with `{name}` for the new keyword, then
  *   creates the saved filter on its id and the smart book with the filter object as the server
- *   returned it; the owner sees the book and its recipe through `?filter=`;
+ *   returned it plus its id as `filter_id` (Tandoor 2.7.3+); the owner sees the book and its
+ *   recipe through `?filter=`;
  * - `user-space/all_personal` gives the member's and the guest's groups.
  */
 @EnabledIfEnvironmentVariable(named = "TANDOOR_GUEST_TOKEN", matches = ".+")
@@ -114,18 +115,23 @@ class BookWritesContractTest {
         )
         val filter = api("POST", "/api/custom-filter/", filterBody, token = env.readerToken)
         assertEquals(201, filter.status, "$filter")
-        // The book's filter is the object the server returned (core:sync encodes CustomFilterDto back).
+        // The book's filter is the object the server returned (core:sync encodes CustomFilterDto back)
+        // AND its id as `filter_id`: Tandoor 2.7.3 made `filter` read-only and writes `filter_id`
+        // (it still maps a `filter` object with an id when `filter_id` is missing); before 2.7.3
+        // `filter_id` is an unknown field and ignored.
         val returned = filter.jsonObject
         val smartBody = obj(
             "name" to "Vill laga (kontrakt)",
             "description" to "",
             "shared" to listOf(mapOf("id" to owner)),
             "filter" to JsonObject(returned.filterKeys { it in FILTER_FIELDS }),
+            "filter_id" to returned.longAt("id"),
         )
         val smart = api("POST", "/api/recipe-book/", smartBody, token = env.readerToken)
         assertEquals(201, smart.status, "$smart")
         val smartId = smart.jsonObject.longAt("id") ?: error("book without id")
         assertEquals(returned.longAt("id"), smart.jsonObject.objAt("filter")?.longAt("id"))
+        if ("filter_id" in smart.jsonObject) assertEquals(returned.longAt("id"), smart.jsonObject.longAt("filter_id"))
         val filterId = returned.longAt("id")
         val listed = api("GET", "/api/recipe/?filter=$filterId&page_size=100", token = env.fas1Token)
         assertTrue(listed.jsonObject.arrAt("results").objects().any { it.longAt("id") == recipe }, "the owner sees the queue: $listed")

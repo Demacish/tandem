@@ -439,19 +439,20 @@ internal class OutboxSender @Inject constructor(
                 null
             }
 
+            // The token works, but this write was refused (FACTS "Fas 2": a guest gets 403 on bulk
+            // and recipe edits; Tandoor 2.7.3: 400 for a food the role may not create, see
+            // NestedCreateRefusal): FAILED, the role is read again, and the drain ends here so
+            // several refused writes never go out in a row (plan 4.1).
+            error == SyncGuard.FORBIDDEN_ERROR || NestedCreateRefusal.isRefusal(row.payload, error) -> {
+                rejected(FORBIDDEN)
+                roles.sync(remote, background = true)
+                DrainResult.STOPPED
+            }
+
             // Fas 3: an edit held back by a conflict is FAILED with its own code, never retried by itself.
             error is TandemError.BadRequest || error == TandemError.Unknown(UNSUPPORTED) || error == RECIPE_CONFLICT -> {
                 rejected(error.code())
                 null
-            }
-
-            error == SyncGuard.FORBIDDEN_ERROR -> {
-                // The token works, but this write was refused (FACTS "Fas 2": a guest gets 403 on bulk
-                // and recipe edits): FAILED, the role is read again, and the drain ends here so
-                // several refused writes never go out in a row (plan 4.1).
-                rejected(FORBIDDEN)
-                roles.sync(remote, background = true)
-                DrainResult.STOPPED
             }
 
             error is TandemError.Unauthorized || error == TandemError.Blocked || error is TandemError.Throttled -> {

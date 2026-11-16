@@ -20,8 +20,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Every DTO against EVERY recorded fixture in `api-schema/fixtures/2.6.13` and `2.7.1` (Phase 0
- * and `fas1/`; Tandoor 2.7 logs in through allauth and sends some numbers as decimals):
+ * Every DTO against EVERY recorded fixture in `api-schema/fixtures/2.6.13`, `2.7.1` and `2.7.3`
+ * (Phase 0 and `fas1/`; Tandoor 2.7 logs in through allauth and sends some numbers as decimals;
+ * 2.7.3 adds `filter_id` to a recipe book):
  *
  * 1. Each successful JSON response is routed by method and path to its DTO and decoded with
  *    [TandoorJson]; a new fixture without a route (or an explicit [notModelled] reason) fails.
@@ -158,13 +159,16 @@ class DtoFixturesTest {
         "fas4/editor/fil-lista" to "contract probe; the app only uploads a step's file",
     )
 
-    @Test
-    fun everySuccessfulJsonFixtureOfTandoor2613DecodesWithItsDto() = checkFixtures("2.6.13", notModelled)
+    /** Fields a later Tandoor added; recordings of older versions cannot contain them. */
+    private val since273 = setOf("RecipeBookDto.filter_id")
 
     @Test
-    fun everySuccessfulJsonFixtureOfTandoor271DecodesWithItsDto() = checkFixtures("2.7.1", notModelled)
+    fun everySuccessfulJsonFixtureOfTandoor2613DecodesWithItsDto() = checkFixtures("2.6.13", notModelled, absent = since273)
 
-    private fun checkFixtures(version: String, notModelled: Map<String, String>) {
+    @Test
+    fun everySuccessfulJsonFixtureOfTandoor271DecodesWithItsDto() = checkFixtures("2.7.1", notModelled, absent = since273)
+
+    private fun checkFixtures(version: String, notModelled: Map<String, String>, absent: Set<String> = emptySet()) {
         val names = Fixture.allNames(version)
         assertTrue("Fixtures not found: $names", names.size > 100)
         assertTrue("Stale notModelled entries: ${notModelled.keys - names.toSet()}", names.containsAll(notModelled.keys))
@@ -192,7 +196,7 @@ class DtoFixturesTest {
 
         assertTrue("Only $decoded fixtures decoded", decoded >= 60)
         assertTrue(check.problems.joinToString("\n"), check.problems.isEmpty())
-        val neverSeen = check.declared - check.seen
+        val neverSeen = check.declared - check.seen - absent
         assertTrue("Declared fields that no fixture contains (wrong @SerialName?): $neverSeen", neverSeen.isEmpty())
     }
 

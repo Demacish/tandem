@@ -257,7 +257,11 @@ data class RecipeDto(
         get() = nutrition is JsonObject
 }
 
-/** `GET /api/recipe-book/`. [filter] is a saved search (smart book) or null. */
+/**
+ * `GET /api/recipe-book/`. [filter] is a saved search (smart book) or null. [filterId] is the same
+ * filter's id, sent from Tandoor 2.7.3 on, where `filter` became read-only and a write names the
+ * filter with `filter_id` (api-schema/fixtures/2.7.3/FACTS.md); null before 2.7.3.
+ */
 @Serializable
 data class RecipeBookDto(
     val id: Long? = null,
@@ -266,6 +270,7 @@ data class RecipeBookDto(
     val shared: List<UserDto> = emptyList(),
     @SerialName("created_by") val createdBy: UserDto? = null,
     val filter: JsonElement? = null,
+    @SerialName("filter_id") val filterId: Long? = null,
     val order: Int = 0,
 )
 

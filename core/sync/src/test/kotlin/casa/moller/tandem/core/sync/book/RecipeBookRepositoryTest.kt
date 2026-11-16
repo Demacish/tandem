@@ -248,6 +248,9 @@ class RecipeBookRepositoryTest {
         assertEquals(WantToCook.filterSearch(keywordId), (filter["search"] as JsonPrimitive).content)
         val smart = tandoor.books.values.single { it.filter != null }
         assertEquals("Vill laga", smart.name)
+        // The filter also by id: Tandoor 2.7.3 made `filter` read-only and reads `filter_id`.
+        val smartBody = Json.parseToJsonElement(tandoor.callsTo("POST", "/api/recipe-book/").single().second).jsonObject
+        assertEquals((smart.filter?.get("id") as JsonPrimitive).content, (smartBody["filter_id"] as JsonPrimitive).content)
         assertEquals(RecipeBookKind.WANT_TO_COOK, book("Vill laga").kind)
         assertEquals(1, book("Vill laga").recipeCount)
 

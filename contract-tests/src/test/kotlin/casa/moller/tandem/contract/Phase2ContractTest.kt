@@ -72,6 +72,9 @@ class Phase2ContractTest {
     private var readerId: Long? = null
     private var preferences: JsonObject? = null
     private var recipeId: Long? = null
+
+    /** `version` of server-settings (`latest` names no version): picks the expectations of [expectedFor]. */
+    private var serverVersion: String? = null
     private val ingredientIds = LinkedHashMap<String, Long>()
     private val foodIds = LinkedHashMap<String, Long>()
     private val unitIds = LinkedHashMap<String, Long>()
@@ -111,6 +114,7 @@ class Phase2ContractTest {
         val interval = objOf(settings)?.get("shopping_min_autosync_interval")
         observe("serverSettings.shoppingMinAutosyncInterval", interval)
         observe("serverSettings.shoppingMinAutosyncInterval.type", interval?.let { Facts.typeOf(it) })
+        serverVersion = objOf(settings)?.stringAt("version")
 
         val prefs = api("user-preference", "GET", "/api/user-preference/")
         preferences = (prefs.json as? JsonArray)?.firstOrNull() as? JsonObject
@@ -493,6 +497,14 @@ class Phase2ContractTest {
             token = env.guestToken,
         )
         observe("shopping.guest.create", describe(guestCreate))
+        // Tandoor 2.7.3: a guest may no longer create a food through the entry (FoodSerializer.create
+        // checks the group `user`): 400 with the refusal as a plain message list on `food`, not as
+        // the nested object of a field error (`{"food": {"name": [...]}}`). core:sync's
+        // NestedCreateRefusal tells the two apart by this shape, never by the localized text.
+        if (guestCreate.status == BAD_REQUEST) {
+            val food = objOf(guestCreate)?.get("food")
+            observe("shopping.guest.create.foodRefusedAsMessages", food is JsonArray && food.all { it is JsonPrimitive && it.isString })
+        }
         creamId?.let { id ->
             val guestCheck = bulk("guest-bulk", obj("ids" to listOf(id), "checked" to false), token = env.guestToken, record = false)
             observe("shopping.guest.bulk", describe(guestCheck))
@@ -512,7 +524,12 @@ class Phase2ContractTest {
         val fromRecipe = pageOrArray(fullList().json).filter { it.objAt("list_recipe_data")?.longAt("recipe") == recipe }
         observe("recipeShopping.entries.foods", amounts(fromRecipe))
         observe("recipeShopping.entries.ingredientSet", fromRecipe.isNotEmpty() && fromRecipe.all { it.longAt("ingredient") != null })
-        val listRecipeId = fromRecipe.firstOrNull()?.longAt("list_recipe")
+        // Tandoor 2.7.3 answers this PUT with a 500 (RECIPE_SHOPPING_PUT_BROKEN). The app never calls
+        // it; the list recipe of the next steps is then made the app's way (ShoppingPayloads), so the
+        // PATCH of the servings and the DELETE, which the app does use, are still checked.
+        val viaAppRoute = fromRecipe.isEmpty() && put.status >= SERVER_ERROR
+        observe("listRecipe.viaAppRoute", viaAppRoute)
+        val listRecipeId = if (viaAppRoute) listRecipeTheAppsWay(recipe) else fromRecipe.firstOrNull()?.longAt("list_recipe")
         fromRecipe.firstOrNull()?.objAt("list_recipe_data")?.let { data ->
             observe("listRecipe.data.keys", data.keys.sorted())
             observe("listRecipe.data.servings", data["servings"])
@@ -523,10 +540,12 @@ class Phase2ContractTest {
 
         if (listRecipeId != null) {
             // The same list recipe with other servings: are the entries rescaled in place?
-            val body = obj("ingredients" to picked, "servings" to 4, "list_recipe" to listRecipeId)
-            val again = api("recipe-shopping-put-servings", "PUT", "/api/recipe/$recipe/shopping/", body, record = false)
-            observe("recipeShopping.putServings.status", again.status)
-            observe("recipeShopping.putServings.foods", amounts(entriesOf(listRecipeId)))
+            if (!viaAppRoute) {
+                val body = obj("ingredients" to picked, "servings" to 4, "list_recipe" to listRecipeId)
+                val again = api("recipe-shopping-put-servings", "PUT", "/api/recipe/$recipe/shopping/", body, record = false)
+                observe("recipeShopping.putServings.status", again.status)
+                observe("recipeShopping.putServings.foods", amounts(entriesOf(listRecipeId)))
+            }
 
             val patch = api(
                 "shopping-list-recipe-patch-servings",
@@ -972,12 +991,12 @@ class Phase2ContractTest {
     @Test
     @Order(99)
     fun everyFactMatchesTheBaseline() {
-        for ((key, expected) in EXPECTED) {
+        for ((key, expected) in expectedFor(serverVersion)) {
             val described = (facts[key.removeSuffix(".status")] as? JsonObject)?.get("status")
             val observed = facts[key] ?: described.takeIf { key.endsWith(".status") }
             if (observed != Facts.toJson(expected)) mismatches += "$key: expected ${Facts.toJson(expected)}, observed $observed"
         }
-        assertTrue(mismatches.isEmpty(), "Observed facts differ from the 2.6.13 baseline:\n" + mismatches.joinToString("\n"))
+        assertTrue(mismatches.isEmpty(), "Observed facts differ from the baseline of $serverVersion:\n" + mismatches.joinToString("\n"))
     }
 
     // --- Helpers --------------------------------------------------------------------------------
@@ -1020,6 +1039,33 @@ class Phase2ContractTest {
 
     private fun entriesOf(listRecipe: Long): List<JsonObject> =
         pageOrArray(fullList().json).filter { it.longAt("list_recipe") == listRecipe }
+
+    /**
+     * The list recipe of "grädde" and "potatis" for 8 servings as the app makes it offline
+     * (`POST /api/shopping-list-recipe/`, then one entry per ingredient with `list_recipe` and
+     * `ingredient`, core:sync ShoppingPayloads), when `recipe/{id}/shopping/` failed. Not recorded.
+     */
+    private fun listRecipeTheAppsWay(recipe: Long): Long? {
+        val listRecipe = api(
+            "app-route-list-recipe",
+            "POST",
+            "/api/shopping-list-recipe/",
+            obj("recipe" to recipe, "servings" to PUT_SERVINGS, "name" to ""),
+            record = false,
+        )
+        val id = idOf(listRecipe) ?: return null
+        for ((amount, unit, food) in RECIPE_INGREDIENTS.filter { it.third in APP_ROUTE_FOODS }) {
+            val body = obj(
+                "list_recipe" to id,
+                "ingredient" to ingredientIds[food],
+                "food" to obj("id" to foodIds[food], "name" to food),
+                "unit" to obj("name" to unit),
+                "amount" to amount * PUT_SERVINGS / RECIPE_SERVINGS,
+            )
+            create("app-route-entry-$food", body, record = false)
+        }
+        return id
+    }
 
     private fun entryCountOfMealPlan(id: Long): Int =
         pageOrArray(api("mealplan-entries", "GET", "/api/shopping-list-entry/?mealplan=$id", record = false).json).size
@@ -1110,6 +1156,11 @@ class Phase2ContractTest {
         val JSON = "application/json".toMediaType()
         val BODY_METHODS = setOf("POST", "PUT", "PATCH")
         const val CREATED = 201
+        const val BAD_REQUEST = 400
+        const val SERVER_ERROR = 500
+        const val PUT_SERVINGS = 8.0
+        const val RECIPE_SERVINGS = 4.0
+        val APP_ROUTE_FOODS = setOf("grädde", "potatis")
         const val NO_CONTENT = 204
         const val SMALL_PAUSE_MS = 1100L
         const val MAX_TEXT = 200
@@ -1262,6 +1313,66 @@ class Phase2ContractTest {
             "wantToCook.smartBook.memberRecipes.names" to listOf(RECIPE),
             "wantToCook.remove.keywords" to emptyList<String>(),
         )
+
+        /**
+         * Tandoor 2.7.3 and later (the security release of 2026-11-15, api-schema/fixtures/2.7.3/FACTS.md):
+         * a guest's entry with a NEW food is refused with 400 (the group `user` is needed to create a
+         * food, a meal type or a shopping list), shaped as a message list on `food`.
+         */
+        val SINCE_2_7_3: Map<String, Any?> = linkedMapOf(
+            "shopping.guest.create.status" to 400,
+            "shopping.guest.create.foodRefusedAsMessages" to true,
+        )
+
+        /**
+         * Releases whose `PUT /api/recipe/{id}/shopping/` with ingredient ids answers 500: 2.7.3 filters
+         * the ids into a `values_list` QuerySet that `RecipeShoppingEditor._add_ingredients` reads as
+         * Ingredient objects (`x.food` on an int; upstream commit a4f91e5, "fix shopping sub endpoint
+         * ingredient filter"). A Tandoor bug in an endpoint the app does not call; the list recipe's
+         * own facts are checked through the app's route instead ([listRecipeTheAppsWay]).
+         */
+        val RECIPE_SHOPPING_PUT_BROKEN: Set<String> = setOf("2.7.3")
+
+        /** What a broken PUT changes: the PUT itself and the entries it should have made. */
+        val WITH_BROKEN_RECIPE_SHOPPING_PUT: Map<String, Any?> = linkedMapOf(
+            "recipeShopping.put.status" to 500,
+            "recipeShopping.entries.foods" to emptyList<String>(),
+            "listRecipe.viaAppRoute" to true,
+        )
+
+        /** Facts a broken PUT cannot give (the second PUT is not sent). */
+        val NOT_WITH_BROKEN_RECIPE_SHOPPING_PUT: Set<String> = setOf("recipeShopping.putServings.foods")
+
+        /** `2.7.3` -> [2, 7, 3]; null for `latest`, a development build or anything unreadable. */
+        fun versionOf(text: String?): List<Int>? =
+            Regex("^(\\d+)\\.(\\d+)\\.(\\d+)").find(text.orEmpty())?.groupValues?.drop(1)?.map { it.toInt() }
+
+        private fun atLeast(version: List<Int>?, vararg minimum: Int): Boolean {
+            if (version == null) return false
+            for (i in minimum.indices) {
+                if (version[i] != minimum[i]) return version[i] > minimum[i]
+            }
+            return true
+        }
+
+        /** The names of the expectation sets [expectedFor] applies to [version]. */
+        fun expectationsOf(version: String?): List<String> = buildList {
+            add("EXPECTED")
+            if (atLeast(versionOf(version), 2, 7, 3)) add("SINCE_2_7_3")
+            if (version in RECIPE_SHOPPING_PUT_BROKEN) add("WITH_BROKEN_RECIPE_SHOPPING_PUT")
+        }
+
+        /** [EXPECTED] for the server's [version], with the later releases' differences. */
+        fun expectedFor(version: String?): Map<String, Any?> {
+            val expected = LinkedHashMap(EXPECTED)
+            val sets = expectationsOf(version)
+            if ("SINCE_2_7_3" in sets) expected.putAll(SINCE_2_7_3)
+            if ("WITH_BROKEN_RECIPE_SHOPPING_PUT" in sets) {
+                expected.putAll(WITH_BROKEN_RECIPE_SHOPPING_PUT)
+                NOT_WITH_BROKEN_RECIPE_SHOPPING_PUT.forEach(expected::remove)
+            }
+            return expected
+        }
 
         val PARSER_SAMPLES = listOf(
             "2 dl grädde",

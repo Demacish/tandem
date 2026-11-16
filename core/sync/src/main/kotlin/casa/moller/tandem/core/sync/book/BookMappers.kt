@@ -20,9 +20,12 @@ import kotlinx.serialization.json.longOrNull
 internal fun RecipeBookDto.toEntity(accountId: String, wantToCookKeywordIds: Set<Long>): RecipeBookEntity? {
     val bookId = id ?: return null
     val filterObject = filter as? JsonObject
-    val filterId = (filterObject?.get("id") as? JsonPrimitive)?.longOrNull
+    // Tandoor 2.7.3+ also sends `filter_id`; the object's own id wins, the field covers a book
+    // whose answer names the filter only by id.
+    val bookFilterId = (filterObject?.get("id") as? JsonPrimitive)?.longOrNull ?: filterId
     val search = (filterObject?.get("search") as? JsonPrimitive)?.takeIf { it.isString }?.content
-    val kind = RecipeBookRules.kind(name, description, hasFilter = filterObject != null, filterSearch = search, wantToCookKeywordIds)
+    val hasFilter = filterObject != null || bookFilterId != null
+    val kind = RecipeBookRules.kind(name, description, hasFilter = hasFilter, filterSearch = search, wantToCookKeywordIds)
     return RecipeBookEntity(
         accountId = accountId,
         localId = bookId,
@@ -32,7 +35,7 @@ internal fun RecipeBookDto.toEntity(accountId: String, wantToCookKeywordIds: Set
         createdBy = createdBy?.id,
         createdByName = createdBy?.label(),
         sharedUserIds = BookIds.encode(shared.mapNotNull { it.id }),
-        filterId = filterId,
+        filterId = bookFilterId,
         filterSearch = search,
         bookOrder = order,
         kind = kind.toStored(),

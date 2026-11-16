@@ -43,6 +43,9 @@ import kotlinx.serialization.json.put
 /** Error code of a row this version cannot read (kept FAILED for "Pending changes"). */
 private const val UNSUPPORTED: String = "tandem.sync.unsupported-outbox-op"
 
+/** A book's filter by id (Tandoor 2.7.3+, where `filter` is read-only). */
+private const val FILTER_ID: String = "filter_id"
+
 /** The names of the books Tandem creates, in the app's language (they are seen on the web too). */
 internal interface BookNames {
     /** "Favoriter" / "Favourites": the favourites book is "<word> (<owner>)". */
@@ -353,6 +356,9 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
             put("description", "")
             put("shared", others)
             put("filter", TandoorJson.encodeToJsonElement(CustomFilterDto.serializer(), filter))
+            // Tandoor 2.7.3 made `filter` read-only and names the filter with `filter_id`; older
+            // versions ignore the unknown field (BookWritesContractTest).
+            filter.id?.let { put(FILTER_ID, it) }
         }
         val book = (caller.write(remote) { books.createBook(bookBody) } as? Outcome.Success)?.value ?: return
         book.toEntity(remote.accountId, setOf(keywordId))?.let { dao.upsertBooks(listOf(it)) }
