@@ -50,10 +50,9 @@ class Phase5TillHandsSmokeTest : Phase2SmokeBase() {
 
         // The inbox is a full-screen page (no tabs): back to the tabs, then Mer.
         backToTab("More")
-        openMorePage(INBOX_TITLE, By.text(INBOX_NOT_IN_DEMO))
-        openMorePage(ASSISTANT_TITLE, By.text(ASSISTANT_SWITCH))
-        openMorePage(LOCK_TITLE, By.text(NO_SCREEN_LOCK))
-        app.capture("phase5-lock-no-screen-lock")
+        openMorePage(INBOX_TITLE, By.text(INBOX_NOT_IN_DEMO), "phase5-inbox-settings-demo")
+        openMorePage(ASSISTANT_TITLE, By.text(ASSISTANT_SWITCH), "phase5-assistant-page")
+        openMorePage(LOCK_TITLE, By.text(NO_SCREEN_LOCK), "phase5-lock-no-screen-lock")
 
         assertEquals("Demo mode never talks to a server", emptyList<String>(), tandoor.requests.toList())
     }
@@ -71,10 +70,11 @@ class Phase5TillHandsSmokeTest : Phase2SmokeBase() {
         app.tap(tab)
     }
 
-    /** Opens Mer's row [title], waits for [shows] on its page and goes back to Mer. */
-    private fun openMorePage(title: String, shows: BySelector) {
+    /** Opens Mer's row [title], waits for [shows] on its page, captures it as [capture] and goes back to Mer. */
+    private fun openMorePage(title: String, shows: BySelector, capture: String) {
         app.tapInList(title)
         app.waitFor(shows)
+        app.capture(capture)
         app.device.pressBack()
         app.waitUntilGone(shows)
     }
